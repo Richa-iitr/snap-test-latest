@@ -79,19 +79,19 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
     case 'create':
       const provider = await getProvider();
       const account = await getAccount();
-      const owner = new Wallet(account, provider);
-      // const acontract = new ethers.Contract(
-      //   '0xe1bC2DF8Be88939E17Eb5cCfa89Dd7d7fdDaEeF8',
-      //   createAbi,
-      //   owner,
-      // );
+      const owner = provider.getSigner(account);
+      const acontract = new ethers.Contract(
+        '0xe1bC2DF8Be88939E17Eb5cCfa89Dd7d7fdDaEeF8',
+        createAbi,
+        owner,
+      );
 
-      // const aa = await acontract.createClone(
-      //   '0xa51D9181aC7a8Cc12060483cD42b89216b2d26D4',
-      // );
-      // const rc = await aa.wait();
-      // const event_ = rc.events.find((x: any) => x.event === 'cloneCreated');
-      // const adr = event_.args.clone;
+      const aa = await acontract.createClone(
+        '0xa51D9181aC7a8Cc12060483cD42b89216b2d26D4',
+      );
+      const rc = await aa.wait();
+      const event_ = rc.events.find((x: any) => x.event === 'cloneCreated');
+      const adr = event_.args.clone;
 
       return snap.request({
         method: 'snap_confirm',
