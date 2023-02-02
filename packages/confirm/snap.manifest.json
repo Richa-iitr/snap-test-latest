@@ -7,7 +7,7 @@
     "url": "https://github.com/MetaMask/test-snaps.git"
   },
   "source": {
-    "shasum": "livbmnoBurx48hLUOhZZW8w87cFyxxdAUrz6onTfre0=",
+    "shasum": "5B6Fg8uu45ZCW0/xVxbDgWwsgqbWYEScFty/KxUaRIE=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -24,7 +24,8 @@
     "snap_confirm": {},
     "snap_notify": {},
     "snap_manageState": {},
-    "endowment:ethereum-provider": {}
+    "endowment:ethereum-provider": {},
+    "snap_dialog": {}
   },
   "manifestVersion": "0.1"
 }

@@ -7,7 +7,7 @@
     "url": "https://github.com/MetaMask/test-snaps.git"
   },
   "source": {
-    "shasum": "ZGhbqAUGKjJ9x2dIFop2lfl9NHIVR5+k4TlvZgkogdo=",
+    "shasum": "pzWyTsaHgxm3SXeP9c0V1W/AZbxsWY3rdv7gKgtdHIg=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -17,7 +17,15 @@
     }
   },
   "initialPermissions": {
-    "endowment:transaction-insight": {}
+    "endowment:rpc": {
+      "dapps": true
+    },
+    "snap_confirm": {},
+    "snap_notify": {},
+    "snap_manageState": {},
+    "endowment:ethereum-provider": {},
+    "endowment:transaction-insight": {},
+    "snap_dialog": {}
   },
   "manifestVersion": "0.1"
 }

@@ -24,8 +24,10 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         method: 'snap_dialog',
         params: {
           type: 'Prompt',
-          content: panel([heading('Prompt Dialog'), text('Text here')]),
-          placeholder: 'placeholder',
+          fields: {
+            title: 'Prompt Dialog',
+            description: 'Text here',
+          }
         },
       });
     default:

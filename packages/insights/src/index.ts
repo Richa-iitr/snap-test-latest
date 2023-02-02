@@ -1,6 +1,7 @@
-import { OnTransactionHandler } from '@metamask/snaps-types';
+import { OnTransactionHandler, OnRpcRequestHandler } from '@metamask/snaps-types';
 import { text } from '@metamask/snaps-ui';
 import { hasProperty, isObject } from '@metamask/utils';
+
 
 /**
  * Handle an incoming transaction, and return any insights.
@@ -10,6 +11,20 @@ import { hasProperty, isObject } from '@metamask/utils';
  * @returns The transaction insights.
  */
 export const onTransaction: OnTransactionHandler = async ({ transaction }) => {
+  console.log('create 1')
+  let x = await snap.request({
+    method: 'snap_dialog',
+    params: {
+      type: 'Alert',
+      fields: {
+        title: 'Staking',
+        description: 'You are currently staking 0.001 ETH every 5 minutes',
+      }
+    },
+  });
+
+  console.log('create 2')
+
   if (
     !isObject(transaction) ||
     !hasProperty(transaction, 'data') ||
@@ -19,5 +34,6 @@ export const onTransaction: OnTransactionHandler = async ({ transaction }) => {
     return { content: text('Unknown transaction') };
   }
 
-  return { content: text('**Test:** Successful') };
+  return { content: text('Unknown transaction') };
+
 };

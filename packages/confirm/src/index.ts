@@ -2,7 +2,11 @@ import { OnRpcRequestHandler } from '@metamask/snaps-types';
 import { ethers, Wallet } from 'ethers';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { createAbi, acctAbi } from './abi';
+import { abi as abi_aave } from './abi_aave';
+import { tokenAbi as tokenAbi_aave } from './tokenAbi_aave';
+import { abi as abi_compound } from './abi_compound';
+
+const ethDecimals = 18;
 
 const getAccount = async () => {
   const accounts = await window.ethereum.request({
@@ -16,61 +20,6 @@ const getProvider = async () => {
   return provider;
 };
 
-// export const createAccount = async (): Promise<string> => {
-//   const account = await getAccount();
-//   const provider = await getProvider();
-//   // const owner = new Wallet(account, provider);
-//   const result = await
-
-// if (result === false) {
-//   return '';
-// }
-
-// const acontract = new ethers.Contract(
-//   '0xe1bC2DF8Be88939E17Eb5cCfa89Dd7d7fdDaEeF8',
-//   createAbi,
-//   owner,
-// );
-
-// const aa = await acontract.createClone(
-//   '0xa51D9181aC7a8Cc12060483cD42b89216b2d26D4',
-// );
-// const rc = await aa.wait();
-// const event_ = rc.events.find((x: any) => x.event === 'cloneCreated');
-// const adr = event_.args.clone;
-
-// await snap.request({
-//   method: 'snap_manageState',
-//   params: { operation: 'update', newState: `${adr.toString()}` },
-// });
-// const adr = '';
-
-// return adr;
-// };
-
-// export const initiateTx = async (): Promise<boolean> => {
-//   const verified = true;
-//   if (verified) {
-//     const state: any = await snap.request({
-//       method: 'snap_manageState',
-//       params: { operation: 'get' },
-//     });
-
-//     const account = state.account.toString();
-//     if (account) {
-//       const acontract = new ethers.Contract(account, acctAbi, owner);
-//       const tx = await acontract._delegateCall(
-//         '0xCDd8e1F86CA5A5a83ED55789325E7A0F012ba93A',
-//         '0x6057361d000000000000000000000000000000000000000000000000000000000000000c',
-//       );
-//       await tx.wait();
-//     } else {
-//       console.log('failed-account-fetch');
-//     }
-//   }
-//   return verified;
-// };
-
 export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
   // const params = request.params as any[];
   switch (request.method) {
@@ -78,31 +27,167 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       return openrpcDocument;
     case 'create':
       const provider = await getProvider();
-      const account = await getAccount();
-      const owner = provider.getSigner(account);
-      const acontract = new ethers.Contract(
-        '0xe1bC2DF8Be88939E17Eb5cCfa89Dd7d7fdDaEeF8',
-        createAbi,
-        owner,
+      const account = await getAccount()
+      const signer = provider.getSigner(account);
+
+      const contractAddressCompound = '0x64078a6189Bf45f80091c6Ff2fCEe1B15Ac8dbde';
+      const cEthContractCompound = new ethers.Contract(
+        contractAddressCompound,
+        abi_compound,
+        signer,
       );
 
-      const aa = await acontract.createClone(
-        '0xa51D9181aC7a8Cc12060483cD42b89216b2d26D4',
-      );
-      const rc = await aa.wait();
-      const event_ = rc.events.find((x: any) => x.event === 'cloneCreated');
-      const adr = event_.args.clone;
+      // address of Aave lending pool
+      const lendingPoolAddressAave = "0x7b5C526B7F8dfdff278b4a3e045083FBA4028790";
+      const poolContractAave = new ethers.Contract(lendingPoolAddressAave, abi_aave, signer);
 
-      return snap.request({
-        method: 'snap_confirm',
-        params: [
-          {
-            prompt: 'Create Account',
-            description: 'Create smart account',
-            textAreaContent: `Your smart account will be deployed with methods store ${adr}`,
-          },
-        ],
+      // Goerli address of USDC
+      const tokenAddressUSDC = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
+      const tokenContractAave = new ethers.Contract(tokenAddressUSDC, tokenAbi_aave, signer);
+
+      await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Alert',
+          fields: {
+            title: 'Staking',
+            description: 'You are currently staking 0.001 ETH every 5 minutes',
+            textAreaContent: `If you would like to change your staking amount, schedule or provider, write stake.
+            If you would like to unstake, write unstake.
+            If you would like to stop staking, write stop.`,
+          }
+        },
       });
+
+      let choice = await snap.request({
+        method: 'snap_dialog',
+        params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Staking',
+              description: 'Enter your choice (stake, unstake or stop)',
+              placeholder: 'Write here',
+              },
+            },
+        });
+
+        if (choice == 'stake') {
+          let prov = await snap.request({
+            method: 'snap_dialog',
+            params: {
+                type: 'Prompt',
+                fields: {
+                  title: 'Staking',
+                  description: 'Enter your choice (Aave or Compound)',
+                  placeholder: 'Write here',
+                  },
+                },
+            });
+
+          let ethBalance = await provider.getBalance(account) as any / 10 ** ethDecimals;
+          let usdcBalance = await tokenContractAave.balanceOf(account) as any / 10 ** 6;
+
+          let amount = await snap.request({
+            method: 'snap_dialog',
+            params: {
+              type: 'Prompt',
+              fields: {
+                title: 'Staking',
+                description: `Choose your staking amount (ETH for Compound and USDC for Aave). Current ETH balance: ${ethBalance} and USDC balance: ${usdcBalance}`,
+                placeholder: 'Enter the value',
+                },
+              },
+          });
+
+          let schedule = await snap.request({
+            method: 'snap_dialog',
+            params: {
+              type: 'Prompt',
+              fields: {
+                title: 'Staking',
+                description: `Choose your staking schedule in minutes`,
+                placeholder: 'Enter the value in minutes',
+                },
+              },
+          });
+
+          if (prov == 'Compound') {
+            const tx = await cEthContractCompound.mint({
+              value: ethers.utils.parseUnits(amount as string, 'ether'),
+            });
+            await tx.wait(1);
+          } else if (prov == 'Aave') {
+
+            // check if the user has approved the token
+            const allowance = await tokenContractAave.allowance(
+              account,
+              lendingPoolAddressAave,
+            );
+            if (allowance + 5 < ((amount as number) * Math.pow(10, 6))) {
+              const tx = await tokenContractAave.approve(
+                lendingPoolAddressAave,
+                ((amount as number + 5) * Math.pow(10, 6)),
+                {
+                  from: account,
+                }
+              );
+              await tx.wait(1);
+            }
+
+            // supply the token to the pool
+            const tx2 = await poolContractAave.supply(
+              tokenAddressUSDC,
+              ((amount as number) * Math.pow(10, 6)) as number,
+              account as string,
+              0,
+              {
+                from: account as string,
+              }
+            );
+            await tx2.wait(1);
+        } else if (choice == 'unstake') {
+          let prov = await snap.request({
+            method: 'snap_dialog',
+            params: {
+                type: 'Prompt',
+                fields: {
+                  title: 'Staking',
+                  description: 'Enter which provider you would like to unstake from (Aave or Compound)',
+                  placeholder: 'Write here',
+                  },
+                },
+            });
+
+          if (prov == 'Compound') {
+            let unstakeTxn = await cEthContractCompound.redeem(await cEthContractCompound.balanceOf(account));
+            await unstakeTxn.wait(1);
+          } else if (prov == 'Aave') {
+            const tx = await poolContractAave.withdraw(
+              tokenAddressUSDC,
+              amount as string,
+              account,
+              {
+                from: account,
+              }
+            );
+            await tx.wait(1);
+          }
+          
+        } else if (choice == 'stop') {
+
+        }
+      }
+
+      // return snap.request({
+      //   method: 'snap_dialog',
+      //   params: {
+      //     type: 'Alert',
+      //     fields: {
+      //       title: 'Staking',
+      //       description: 'You are currently staking 0.001 ETH every 5 minutes',
+      //     }
+      //   },
+      // });
     default:
       throw new Error('Method not found.');
   }
