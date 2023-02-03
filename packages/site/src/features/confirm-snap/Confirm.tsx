@@ -33,8 +33,7 @@ export const Confirm: FunctionComponent = () => {
   const handleSubmit = () => {
     invokeSnap({
       snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
-      method: 'confirm',
-      params: [title, description, textAreaContent],
+      method: 'swap',
     });
   };
 
