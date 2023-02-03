@@ -42,7 +42,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       const poolContractAave = new ethers.Contract(lendingPoolAddressAave, abi_aave, signer);
 
       // Goerli address of USDC
-      const tokenAddressUSDC = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
+      const tokenAddressUSDC = "0x65aFADD39029741B3b8f0756952C74678c9cEC93";
       const tokenContractAave = new ethers.Contract(tokenAddressUSDC, tokenAbi_aave, signer);
 
       await snap.request({
@@ -151,7 +151,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             params: {
                 type: 'Prompt',
                 fields: {
-                  title: 'Staking',
+                  title: 'Unstaking',
                   description: 'Enter which provider you would like to unstake from (Aave or Compound)',
                   placeholder: 'Write here',
                   },
