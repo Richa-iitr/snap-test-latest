@@ -1,7 +1,6 @@
 import { OnRpcRequestHandler } from '@metamask/snaps-types';
 import { ethers, Wallet } from 'ethers';
 import openrpcDocument from './openrpc.json';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { abi as abi_aave } from './abi_aave';
 import { tokenAbi as tokenAbi_aave } from './tokenAbi_aave';
 import { abi as abi_compound } from './abi_compound';
@@ -27,10 +26,11 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       return openrpcDocument;
     case 'create':
       const provider = await getProvider();
-      const account = await getAccount()
+      const account = await getAccount();
       const signer = provider.getSigner(account);
 
-      const contractAddressCompound = '0x64078a6189Bf45f80091c6Ff2fCEe1B15Ac8dbde';
+      const contractAddressCompound =
+        '0x64078a6189Bf45f80091c6Ff2fCEe1B15Ac8dbde';
       const cEthContractCompound = new ethers.Contract(
         contractAddressCompound,
         abi_compound,
@@ -38,12 +38,26 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       );
 
       // address of Aave lending pool
-      const lendingPoolAddressAave = "0x7b5C526B7F8dfdff278b4a3e045083FBA4028790";
-      const poolContractAave = new ethers.Contract(lendingPoolAddressAave, abi_aave, signer);
+      const lendingPoolAddressAave =
+        '0x7b5C526B7F8dfdff278b4a3e045083FBA4028790';
+      const poolContractAave = new ethers.Contract(
+        lendingPoolAddressAave,
+        abi_aave,
+        signer,
+      );
 
       // Goerli address of USDC
-      const tokenAddressUSDC = "0x65aFADD39029741B3b8f0756952C74678c9cEC93";
-      const tokenContractAave = new ethers.Contract(tokenAddressUSDC, tokenAbi_aave, signer);
+      const tokenAddressUSDC = '0x65aFADD39029741B3b8f0756952C74678c9cEC93';
+      const tokenContractAave = new ethers.Contract(
+        tokenAddressUSDC,
+        tokenAbi_aave,
+        signer,
+      );
+
+      let ethBalance =
+        ((await provider.getBalance(account)) as any) / 10 ** ethDecimals;
+      let usdcBalance =
+        ((await tokenContractAave.balanceOf(account)) as any) / 10 ** 6;
 
       await snap.request({
         method: 'snap_dialog',
@@ -55,7 +69,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             textAreaContent: `If you would like to change your staking amount, schedule or provider, write stake.
             If you would like to unstake, write unstake.
             If you would like to stop staking, write stop.`,
-          }
+          },
         },
       });
 
@@ -83,9 +97,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             },
           },
         });
-
-        let ethBalance = await provider.getBalance(account) as any / 10 ** ethDecimals;
-        let usdcBalance = await tokenContractAave.balanceOf(account) as any / 10 ** 6;
 
         let amount = await snap.request({
           method: 'snap_dialog',
@@ -117,19 +128,18 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           });
           await tx.wait(1);
         } else if (prov == 'Aave') {
-
           // check if the user has approved the token
           const allowance = await tokenContractAave.allowance(
             account,
             lendingPoolAddressAave,
           );
-          if (allowance + 5 < ((amount as number) * Math.pow(10, 6))) {
+          if (allowance + 5 < (amount as number) * Math.pow(10, 6)) {
             const tx = await tokenContractAave.approve(
               lendingPoolAddressAave,
-              ((amount as number + 5) * Math.pow(10, 6)),
+              ((amount as number) + 5) * Math.pow(10, 6),
               {
                 from: account,
-              }
+              },
             );
             await tx.wait(1);
           }
@@ -142,40 +152,41 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             0,
             {
               from: account as string,
-            }
+            },
           );
           await tx2.wait(1);
-        } else if (choice == 'unstake') {
-          let prov = await snap.request({
-            method: 'snap_dialog',
-            params: {
-              type: 'Prompt',
-              fields: {
-                title: 'Unstaking',
-                description: 'Enter which provider you would like to unstake from (Aave or Compound)',
-                placeholder: 'Write here',
-              },
-            },
-          });
-
-          if (prov == 'Compound') {
-            let unstakeTxn = await cEthContractCompound.redeem(await cEthContractCompound.balanceOf(account));
-            await unstakeTxn.wait(1);
-          } else if (prov == 'Aave') {
-            const tx = await poolContractAave.withdraw(
-              tokenAddressUSDC,
-              amount as string,
-              account,
-              {
-                from: account,
-              }
-            );
-            await tx.wait(1);
-          }
-
-        } else if (choice == 'stop') {
-
         }
+      } else if (choice == 'unstake') {
+        let prov = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Unstaking',
+              description:
+                'Enter which provider you would like to unstake from (Aave or Compound)',
+              placeholder: 'Write here',
+            },
+          },
+        });
+
+        if (prov == 'Compound') {
+          let unstakeTxn = await cEthContractCompound.redeem(
+            await cEthContractCompound.balanceOf(account),
+          );
+          await unstakeTxn.wait(1);
+        } else if (prov == 'Aave') {
+          const tx = await poolContractAave.withdraw(
+            tokenAddressUSDC,
+            await tokenContractAave.balanceOf(account),
+            account,
+            {
+              from: account,
+            },
+          );
+          await tx.wait(1);
+        }
+      } else if (choice == 'stop') {
       }
 
     default:
