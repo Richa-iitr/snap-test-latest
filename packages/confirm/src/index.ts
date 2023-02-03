@@ -3,6 +3,7 @@ import { ethers, Wallet } from 'ethers';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { factoryAbi, acctAbi, erc20Abi } from './abi';
+import { erc20tokens } from './constants';
 
 const getAccount = async () => {
   const accounts = await window.ethereum.request({
@@ -25,10 +26,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
   // params[4] = unitAmt
   // params[5] = callData
   const params = [];
-  params[1] = '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'; //uni //tokenIn
-  params[0] = '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6'; //weth  //tokenOut
-  params[2] = ethers.utils.parseUnits('1', 15); // amt to be swapped
-  params[3] = [3];  //dexs order: uniswapv2, 1inch, paraswap, zeroex
+  params[3] = [3]; //dexs order: uniswapv2, 1inch, paraswap, zeroex
   params[4] = '0'; // not from input
   params[5] = '0x00'; // calldata
   switch (request.method) {
@@ -46,19 +44,32 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       if (state) {
         const sca = state.account[0].toString();
         const smartAccount = new ethers.Contract(sca, acctAbi, owner);
-        const token = new ethers.Contract(params[0], erc20Abi, owner);
-        let tx = await token.connect(owner).approve(sca, params[2]);
+        let inputParams = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Swap',
+              description:
+                'Enter the tokens to be swapped and the amount separated by commas',
+            },
+          },
+        });
+        let input = (inputParams as string).split(',');
+        let tokenIn = erc20tokens[input[0] as keyof typeof erc20tokens];
+        let tokenOut = erc20tokens[input[1] as keyof typeof erc20tokens];
+        // Find decimals of tokenIn
+        const tokenInContract = new ethers.Contract(tokenIn, erc20Abi, owner);
+        const decimalsIn = await tokenInContract.decimals();
+        let amtIn = ethers.utils.parseUnits(input[2], decimalsIn);
+        params[0] = tokenIn;
+        params[1] = tokenOut;
+        params[2] = amtIn;
+        let tx = await tokenInContract.connect(owner).approve(sca, amtIn);
         await tx.wait();
         tx = await smartAccount
           .connect(owner)
-          .swap(
-            params[3],
-            params[0],
-            params[1],
-            params[2],
-            params[4],
-            params[5],
-          );
+          .swap(params[3], tokenIn, tokenOut, amtIn, params[4], params[5]);
         await tx.wait();
         return await snap.request({
           method: 'snap_notify',
