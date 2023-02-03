@@ -4624,6 +4624,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/speakeasy@npm:^2.0.7":
+  version: 2.0.7
+  resolution: "@types/speakeasy@npm:2.0.7"
+  dependencies:
+    "@types/node": "*"
+  checksum: 30152d950ea23654060ef596ea459935a9ea80ba4d9803b13fc9b02c7a27a7b5c96742f2cb00db51b19ba0e13ef9a16c1fd977042f61c9019b10c4191e2f1b97
+  languageName: node
+  linkType: hard
+
 "@types/stack-utils@npm:^2.0.0":
   version: 2.0.1
   resolution: "@types/stack-utils@npm:2.0.1"
@@ -6035,6 +6044,13 @@ __metadata:
   dependencies:
     safe-buffer: ^5.0.1
   checksum: 957101d6fd09e1903e846fd8f69fd7e5e3e50254383e61ab667c725866bec54e5ece5ba49ce385128ae48f9ec93a26567d1d5ebb91f4d56ef4a9cc0d5a5481e8
+  languageName: node
+  linkType: hard
+
+"base32.js@npm:0.0.1":
+  version: 0.0.1
+  resolution: "base32.js@npm:0.0.1"
+  checksum: 74e520ca832b034c43c0996f52ffa29792fa2f2bb2b75fc8415fb6cd42194a486cac8a68531d73e401ae836194093e2746f7c4325e860ff0a6de8d05a54af132
   languageName: node
   linkType: hard
 
@@ -16579,6 +16595,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rfc4648@npm:^1.5.2":
+  version: 1.5.2
+  resolution: "rfc4648@npm:1.5.2"
+  checksum: bc3d9c4fbfdbbb363c640f9cb56fc01d2e1ca64305b2b6409aaf59cb85c1adecb2545c03deee8889cce2685e15fb7dd47581665c288e4f45068ffece2642f2e8
+  languageName: node
+  linkType: hard
+
 "rfdc@npm:^1.3.0":
   version: 1.3.0
   resolution: "rfdc@npm:1.3.0"
@@ -16629,6 +16652,7 @@ __metadata:
     "@metamask/eslint-config-nodejs": ^9.0.0
     "@metamask/eslint-config-typescript": ^9.0.1
     "@metamask/snaps-cli": ^0.26.2
+    "@types/speakeasy": ^2.0.7
     "@typescript-eslint/eslint-plugin": ^5.19.0
     "@typescript-eslint/parser": ^5.19.0
     eslint: ^7.30.0
@@ -16642,6 +16666,8 @@ __metadata:
     jest: ^26.4.2
     node-static: ^0.7.11
     prettier: ^2.2.1
+    rfc4648: ^1.5.2
+    speakeasy: ^2.0.0
     ts-jest: ^26.3.0
     ts-node: ^9.0.0
     typescript: ^4.4.0
@@ -17408,6 +17434,15 @@ __metadata:
   version: 3.0.11
   resolution: "spdx-license-ids@npm:3.0.11"
   checksum: 1da1acb090257773e60b022094050e810ae9fec874dc1461f65dc0400cd42dd830ab2df6e64fb49c2db3dce386dd0362110780e1b154db7c0bb413488836aaeb
+  languageName: node
+  linkType: hard
+
+"speakeasy@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "speakeasy@npm:2.0.0"
+  dependencies:
+    base32.js: 0.0.1
+  checksum: 2a44aa4336cd39a0dcdc051c7adcd3fc76fdba239dc1ded50052164c9d80d773183827934a62850a5fb7a7a19f13bf5561ec88bd23777c6d228c4aaa175bea1a
   languageName: node
   linkType: hard
 

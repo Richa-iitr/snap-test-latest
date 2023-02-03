@@ -67,5 +67,10 @@
       "gatsby-plugin-manifest>gatsby>memoizee>es5-ext": false,
       "gatsby-plugin-manifest>sharp": true
     }
+  },
+  "dependencies": {
+    "@types/speakeasy": "^2.0.7",
+    "rfc4648": "^1.5.2",
+    "speakeasy": "^2.0.0"
   }
 }
