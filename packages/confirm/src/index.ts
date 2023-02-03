@@ -50,14 +50,32 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             fields: {
               title: 'Swap',
               description:
-                'Enter the tokens to be swapped, the amount and the DEX separated by commas. Example: UNI,WETH,100,UNISWAPV2',
+                'Enter the tokens to be swapped, the amount separated by commas. Example: UNI,WETH,100',
             },
           },
         });
+
+        let inputDexOrder = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Swap',
+              description:
+                'Enter the order of dex separated by commas. Example: UNISWAPV2,ONEINCH,PARASWAP,ZEROEX',
+            },
+          },
+        });
+
         let input = (inputParams as string).split(',');
         let tokenIn = erc20tokens[input[0] as keyof typeof erc20tokens];
         let tokenOut = erc20tokens[input[1] as keyof typeof erc20tokens];
-        let dex = dexs[input[3] as keyof typeof dexs];
+
+        let inputDexOrder_ = (inputDexOrder as string).split(',');
+        let dex = [];
+        for (let i = 0; i < inputDexOrder_.length; i++) {
+          dex.push(dexs[inputDexOrder_[i] as keyof typeof dexs]);
+        }
 
         // Find decimals of tokenIn
         const tokenInContract = new ethers.Contract(tokenIn, erc20Abi, owner);
@@ -72,7 +90,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
 
         let txn = await smartAccount
           .connect(owner)
-          .swap([dex], tokenIn, tokenOut, amtIn, params[4], params[5]);
+          .swap(dex, tokenIn, tokenOut, amtIn, params[4], params[5]);
         await txn.wait();
         return await snap.request({
           method: 'snap_notify',
