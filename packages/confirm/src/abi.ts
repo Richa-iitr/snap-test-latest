@@ -1,4 +1,4 @@
-export const createAbi = [
+export const factoryAbi = [
   {
     anonymous: false,
     inputs: [
@@ -13,28 +13,46 @@ export const createAbi = [
     type: 'event',
   },
   {
+    anonymous: false,
     inputs: [
       {
+        indexed: false,
         internalType: 'address',
-        name: '_implementation',
+        name: 'module_',
         type: 'address',
       },
+    ],
+    name: 'moduleAdded',
+    type: 'event',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: '_implementation', type: 'address' },
+      { internalType: 'address[]', name: 'modules_', type: 'address[]' },
+      { internalType: 'bytes4[][]', name: 'sigs_', type: 'bytes4[][]' },
     ],
     name: 'createClone',
-    outputs: [
-      {
-        internalType: 'address',
-        name: 'instance',
-        type: 'address',
-      },
-    ],
+    outputs: [{ internalType: 'address', name: 'instance', type: 'address' }],
     stateMutability: 'nonpayable',
     type: 'function',
   },
 ];
 
 export const acctAbi = [
-  { inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'new_',
+        type: 'address',
+      },
+      { indexed: false, internalType: 'bool', name: 'enabled', type: 'bool' },
+    ],
+    name: 'AuthsUpdated',
+    type: 'event',
+  },
   {
     anonymous: false,
     inputs: [
@@ -98,6 +116,13 @@ export const acctAbi = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'factory',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes4', name: 'sig_', type: 'bytes4' }],
     name: 'getModule',
     outputs: [{ internalType: 'address', name: 'module_', type: 'address' }],
@@ -105,10 +130,34 @@ export const acctAbi = [
     type: 'function',
   },
   {
+    inputs: [
+      { internalType: 'address', name: 'factory_', type: 'address' },
+      { internalType: 'address', name: 'owner_', type: 'address' },
+    ],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
     inputs: [],
     name: 'owner',
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'auth_', type: 'address' }],
+    name: 'removeAuth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'newAuth_', type: 'address' }],
+    name: 'setAuth',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {

@@ -2,7 +2,7 @@ import { OnRpcRequestHandler } from '@metamask/snaps-types';
 import { ethers, Wallet } from 'ethers';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { createAbi, acctAbi } from './abi';
+import { factoryAbi, acctAbi } from './abi';
 
 const getAccount = async () => {
   const accounts = await window.ethereum.request({
@@ -16,93 +16,82 @@ const getProvider = async () => {
   return provider;
 };
 
-// export const createAccount = async (): Promise<string> => {
-//   const account = await getAccount();
-//   const provider = await getProvider();
-//   // const owner = new Wallet(account, provider);
-//   const result = await
-
-// if (result === false) {
-//   return '';
-// }
-
-// const acontract = new ethers.Contract(
-//   '0xe1bC2DF8Be88939E17Eb5cCfa89Dd7d7fdDaEeF8',
-//   createAbi,
-//   owner,
-// );
-
-// const aa = await acontract.createClone(
-//   '0xa51D9181aC7a8Cc12060483cD42b89216b2d26D4',
-// );
-// const rc = await aa.wait();
-// const event_ = rc.events.find((x: any) => x.event === 'cloneCreated');
-// const adr = event_.args.clone;
-
-// await snap.request({
-//   method: 'snap_manageState',
-//   params: { operation: 'update', newState: `${adr.toString()}` },
-// });
-// const adr = '';
-
-// return adr;
-// };
-
-// export const initiateTx = async (): Promise<boolean> => {
-//   const verified = true;
-//   if (verified) {
-//     const state: any = await snap.request({
-//       method: 'snap_manageState',
-//       params: { operation: 'get' },
-//     });
-
-//     const account = state.account.toString();
-//     if (account) {
-//       const acontract = new ethers.Contract(account, acctAbi, owner);
-//       const tx = await acontract._delegateCall(
-//         '0xCDd8e1F86CA5A5a83ED55789325E7A0F012ba93A',
-//         '0x6057361d000000000000000000000000000000000000000000000000000000000000000c',
-//       );
-//       await tx.wait();
-//     } else {
-//       console.log('failed-account-fetch');
-//     }
-//   }
-//   return verified;
-// };
-
 export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
   // const params = request.params as any[];
   switch (request.method) {
     case 'rpc.discover':
       return openrpcDocument;
-    case 'create':
+    case 'swap': {
+      break;
+    }
+
+    case 'create': {
       const provider = await getProvider();
       const account = await getAccount();
       const owner = provider.getSigner(account);
       const acontract = new ethers.Contract(
-        '0xe1bC2DF8Be88939E17Eb5cCfa89Dd7d7fdDaEeF8',
-        createAbi,
+        '0xE42289016E024F3F322896C6728f0434545465C1',
+        factoryAbi,
         owner,
       );
 
-      const aa = await acontract.createClone(
-        '0xa51D9181aC7a8Cc12060483cD42b89216b2d26D4',
+      const swap_ = '0x517F886127DF76E61640c7d6C9AFd515bf757220';
+      const batch_ = '0xaca091817aa8fd7863833fea1bf9f8f500eaf795';
+
+      const swapSigs = [
+        'swap(uint256[],address,address,uint256,uin256,bytes)',
+      ].map((a) => ethers.utils.id(a).slice(0, 10));
+      const batchSigs = ['sendBatchedTransactions(address[],bytes[])'].map(
+        (a) => ethers.utils.id(a).slice(0, 10),
       );
+
+      const aa = await acontract
+        .connect(owner)
+        .createClone(
+          '0x758abf70a15ad8c3de161393c8144534a3851d57',
+          [swap_, batch_],
+          [swapSigs, batchSigs],
+        );
       const rc = await aa.wait();
       const event_ = rc.events.find((x: any) => x.event === 'cloneCreated');
       const adr = event_.args.clone;
 
+      // initialize state if empty and set default data
+      await snap.request({
+        method: 'snap_manageState',
+        params: {
+          operation: 'update',
+          newState: { account: [`${adr.toString()}`] },
+        },
+      });
+
+      const state: any = await snap.request({
+        method: 'snap_manageState',
+        params: { operation: 'get' },
+      });
+      let acct_ = '';
+
+      if (state) {
+        acct_ = state.account[0].toString();
+        await snap.request({
+          method: 'snap_notify',
+          params: {
+            type: 'inApp',
+            message: `${state.account[0].toString()}`,
+          },
+        });
+      }
       return snap.request({
         method: 'snap_confirm',
         params: [
           {
             prompt: 'Create Account',
             description: 'Create smart account',
-            textAreaContent: `Your smart account will be deployed with methods store ${adr}`,
+            textAreaContent: `Your smart account will be deployed with methods store ${acct_}`,
           },
         ],
       });
+    }
     default:
       throw new Error('Method not found.');
   }
