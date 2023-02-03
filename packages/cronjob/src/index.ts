@@ -4,6 +4,7 @@ import { panel, text, heading } from '@metamask/snaps-ui';
 export const onCronjob: OnCronjobHandler = async ({ request }) => {
   switch (request.method) {
     case 'fireCronjob':
+      console.log("Cronjob fired");
       return snap.request({
         method: 'snap_dialog',
         params: {
