@@ -7,7 +7,7 @@
     "url": "https://github.com/MetaMask/test-snaps.git"
   },
   "source": {
-    "shasum": "bIxeAvG7p3SFeY9YMVG5WvNselnYgKgzH3T4aZCPcbg=",
+    "shasum": "ISm5lc0Mtzi2tknBbNcoCozjUuXhIdGusL/jpEPtkqI=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -25,6 +25,7 @@
     "snap_notify": {},
     "snap_manageState": {},
     "endowment:ethereum-provider": {},
+<<<<<<< HEAD
     "snap_dialog": {},
     "endowment:cronjob": {
       "jobs": [
@@ -36,6 +37,9 @@
         }
       ]
     }
+=======
+    "endowment:long-running": {}
+>>>>>>> ec24d58 (create account successful)
   },
   "manifestVersion": "0.1"
 }
