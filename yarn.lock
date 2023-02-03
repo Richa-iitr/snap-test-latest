@@ -3070,9 +3070,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@metamask/test-snap-confirm@workspace:packages/confirm":
+"@metamask/test-snap-confirm@workspace:packages/staking":
   version: 0.0.0-use.local
-  resolution: "@metamask/test-snap-confirm@workspace:packages/confirm"
+  resolution: "@metamask/test-snap-confirm@workspace:packages/staking"
   dependencies:
     "@metamask/auto-changelog": ^2.5.0
     "@metamask/eslint-config": ^6.0.0

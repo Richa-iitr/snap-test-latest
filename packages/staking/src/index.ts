@@ -62,101 +62,101 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       let choice = await snap.request({
         method: 'snap_dialog',
         params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Staking',
+            description: 'Enter your choice (stake, unstake or stop)',
+            placeholder: 'Write here',
+          },
+        },
+      });
+
+      if (choice == 'stake') {
+        let prov = await snap.request({
+          method: 'snap_dialog',
+          params: {
             type: 'Prompt',
             fields: {
               title: 'Staking',
-              description: 'Enter your choice (stake, unstake or stop)',
+              description: 'Enter your choice (Aave or Compound)',
               placeholder: 'Write here',
-              },
             },
+          },
         });
 
-        if (choice == 'stake') {
-          let prov = await snap.request({
-            method: 'snap_dialog',
-            params: {
-                type: 'Prompt',
-                fields: {
-                  title: 'Staking',
-                  description: 'Enter your choice (Aave or Compound)',
-                  placeholder: 'Write here',
-                  },
-                },
-            });
+        let ethBalance = await provider.getBalance(account) as any / 10 ** ethDecimals;
+        let usdcBalance = await tokenContractAave.balanceOf(account) as any / 10 ** 6;
 
-          let ethBalance = await provider.getBalance(account) as any / 10 ** ethDecimals;
-          let usdcBalance = await tokenContractAave.balanceOf(account) as any / 10 ** 6;
+        let amount = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Staking',
+              description: `Choose your staking amount (ETH for Compound and USDC for Aave). Current ETH balance: ${ethBalance} and USDC balance: ${usdcBalance}`,
+              placeholder: 'Enter the value',
+            },
+          },
+        });
 
-          let amount = await snap.request({
-            method: 'snap_dialog',
-            params: {
-              type: 'Prompt',
-              fields: {
-                title: 'Staking',
-                description: `Choose your staking amount (ETH for Compound and USDC for Aave). Current ETH balance: ${ethBalance} and USDC balance: ${usdcBalance}`,
-                placeholder: 'Enter the value',
-                },
-              },
+        let schedule = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Staking',
+              description: `Choose your staking schedule in minutes`,
+              placeholder: 'Enter the value in minutes',
+            },
+          },
+        });
+
+        if (prov == 'Compound') {
+          const tx = await cEthContractCompound.mint({
+            value: ethers.utils.parseUnits(amount as string, 'ether'),
           });
+          await tx.wait(1);
+        } else if (prov == 'Aave') {
 
-          let schedule = await snap.request({
-            method: 'snap_dialog',
-            params: {
-              type: 'Prompt',
-              fields: {
-                title: 'Staking',
-                description: `Choose your staking schedule in minutes`,
-                placeholder: 'Enter the value in minutes',
-                },
-              },
-          });
-
-          if (prov == 'Compound') {
-            const tx = await cEthContractCompound.mint({
-              value: ethers.utils.parseUnits(amount as string, 'ether'),
-            });
-            await tx.wait(1);
-          } else if (prov == 'Aave') {
-
-            // check if the user has approved the token
-            const allowance = await tokenContractAave.allowance(
-              account,
+          // check if the user has approved the token
+          const allowance = await tokenContractAave.allowance(
+            account,
+            lendingPoolAddressAave,
+          );
+          if (allowance + 5 < ((amount as number) * Math.pow(10, 6))) {
+            const tx = await tokenContractAave.approve(
               lendingPoolAddressAave,
-            );
-            if (allowance + 5 < ((amount as number) * Math.pow(10, 6))) {
-              const tx = await tokenContractAave.approve(
-                lendingPoolAddressAave,
-                ((amount as number + 5) * Math.pow(10, 6)),
-                {
-                  from: account,
-                }
-              );
-              await tx.wait(1);
-            }
-
-            // supply the token to the pool
-            const tx2 = await poolContractAave.supply(
-              tokenAddressUSDC,
-              ((amount as number) * Math.pow(10, 6)) as number,
-              account as string,
-              0,
+              ((amount as number + 5) * Math.pow(10, 6)),
               {
-                from: account as string,
+                from: account,
               }
             );
-            await tx2.wait(1);
+            await tx.wait(1);
+          }
+
+          // supply the token to the pool
+          const tx2 = await poolContractAave.supply(
+            tokenAddressUSDC,
+            ((amount as number) * Math.pow(10, 6)) as number,
+            account as string,
+            0,
+            {
+              from: account as string,
+            }
+          );
+          await tx2.wait(1);
         } else if (choice == 'unstake') {
           let prov = await snap.request({
             method: 'snap_dialog',
             params: {
-                type: 'Prompt',
-                fields: {
-                  title: 'Unstaking',
-                  description: 'Enter which provider you would like to unstake from (Aave or Compound)',
-                  placeholder: 'Write here',
-                  },
-                },
-            });
+              type: 'Prompt',
+              fields: {
+                title: 'Unstaking',
+                description: 'Enter which provider you would like to unstake from (Aave or Compound)',
+                placeholder: 'Write here',
+              },
+            },
+          });
 
           if (prov == 'Compound') {
             let unstakeTxn = await cEthContractCompound.redeem(await cEthContractCompound.balanceOf(account));
@@ -172,22 +172,12 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             );
             await tx.wait(1);
           }
-          
+
         } else if (choice == 'stop') {
 
         }
       }
 
-      // return snap.request({
-      //   method: 'snap_dialog',
-      //   params: {
-      //     type: 'Alert',
-      //     fields: {
-      //       title: 'Staking',
-      //       description: 'You are currently staking 0.001 ETH every 5 minutes',
-      //     }
-      //   },
-      // });
     default:
       throw new Error('Method not found.');
   }
