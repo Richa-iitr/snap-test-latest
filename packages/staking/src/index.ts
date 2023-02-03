@@ -4,6 +4,7 @@ import openrpcDocument from './openrpc.json';
 import { abi as abi_aave } from './abi_aave';
 import { tokenAbi as tokenAbi_aave } from './tokenAbi_aave';
 import { abi as abi_compound } from './abi_compound';
+import { abi as abi_aave_balance } from './abi_aave_balance';
 
 const ethDecimals = 18;
 
@@ -19,7 +20,7 @@ const getProvider = async () => {
   return provider;
 };
 
-export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
+export const OnCronjob: OnRpcRequestHandler = async ({ request }) => {
   // const params = request.params as any[];
   switch (request.method) {
     case 'rpc.discover':
@@ -46,11 +47,19 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
         signer,
       );
 
+      const balanceContractAave = '0xe0bb4593f74B804B9aBd9a2Ec6C71663cEE64E29'
+      const balanceContractAaveContract = new ethers.Contract(
+        balanceContractAave,
+        abi_aave,
+        signer,
+      );
+
       // Goerli address of USDC
       const tokenAddressUSDC = '0x65aFADD39029741B3b8f0756952C74678c9cEC93';
+      const tokenAddressAUSDC = '0x7649e0d153752c556b8b23DB1f1D3d42993E83a5';
       const tokenContractAave = new ethers.Contract(
         tokenAddressUSDC,
-        tokenAbi_aave,
+        abi_aave_balance,
         signer,
       );
 
@@ -176,9 +185,11 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
           );
           await unstakeTxn.wait(1);
         } else if (prov == 'Aave') {
+          let staked = await balanceContractAaveContract.callStatic.balanceOf(account, tokenAddressAUSDC);
+
           const tx = await poolContractAave.withdraw(
             tokenAddressUSDC,
-            await tokenContractAave.balanceOf(account),
+            staked as number,
             account,
             {
               from: account,
