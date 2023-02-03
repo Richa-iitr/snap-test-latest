@@ -21,7 +21,7 @@ const getProvider = async () => {
   return provider;
 };
 
-export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
+export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
   // const params = request.params as any[];
   switch (request.method) {
     case 'rpc.discover':
