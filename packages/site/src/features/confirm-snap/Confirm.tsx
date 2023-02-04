@@ -6,7 +6,6 @@ import {
   useState,
 } from 'react';
 import { Button, Form } from 'react-bootstrap';
-import { ethers } from 'ethers';
 import { Result, Snap } from '../../components';
 import { useInvokeMutation } from '../../api';
 import { getSnapId } from '../../utils/id';
@@ -20,90 +19,78 @@ export const Confirm: FunctionComponent = () => {
   const [textAreaContent, setTextAreaContent] = useState('');
   const [invokeSnap, { isLoading, data }] = useInvokeMutation();
 
-  // const provider = new ethers.providers.Web3Provider(window.ethereum as any);
-  // await provider.send('eth_requestAccounts', []);
-  // const owner: ethers.providers.JsonRpcSigner = provider.getSigner();
+  const handleChange =
+    (fn: Dispatch<SetStateAction<string>>) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      fn(event.target.value);
+    };
 
-  // const handleChange =
-  //   (fn: Dispatch<SetStateAction<string>>) =>
-  //   (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  //     fn(event.target.value);
-  //   };
-
-  const handleSubmit = () => {
+  const handleSubmit = (event: ChangeEvent<HTMLFormElement>) => {
+    event.preventDefault();
     invokeSnap({
       snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
-      method: 'swap',
-    });
-  };
-
-  const handleCreate = () => {
-    invokeSnap({
-      snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
-      method: 'create',
-      // params: [owner as ethers.providers.JsonRpcSigner],
+      method: 'confirm',
+      params: [title, description, textAreaContent],
     });
   };
 
   return (
     <Snap
-      name="Confirm Snap"
+      name="Safe Swap Snap"
       snapId={CONFIRM_SNAP_ID}
       port={CONFIRM_SNAP_PORT}
-      testId="ConfirmSnap"
+      testId="SwapSnap"
     >
-      {/* <Form onSubmit={handleSubmit} className="mb-3">
+      <Form onSubmit={handleSubmit} className="mb-3">
         <Form.Group>
-          <Form.Label>Title</Form.Label>
+          <Form.Label>Swap From</Form.Label>
           <Form.Control
             type="text"
-            placeholder="Title"
+            placeholder="e.g. WETH"
             value={title}
             onChange={handleChange(setTitle)}
             id="msgTitle"
             className="mb-2"
           />
 
-          <Form.Label>Description</Form.Label>
+          <Form.Label>Swap To</Form.Label>
           <Form.Control
             type="text"
-            placeholder="Description"
+            placeholder="e.g. USDC"
+            value={title}
+            onChange={handleChange(setTitle)}
+            id="msgTitle"
+            className="mb-2"
+          />
+          <Form.Label>Enter Amount</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="e.g. 1.0"
+            value={title}
+            onChange={handleChange(setTitle)}
+            id="msgTitle"
+            className="mb-2"
+          />
+
+          <Form.Label>DEX Order</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="e.g. Uniswap"
             value={description}
             onChange={handleChange(setDescription)}
             id="msgDescription"
             className="mb-2"
           />
+        </Form.Group>
 
-          <Form.Label>Textarea Content</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Textarea Content"
-            value={textAreaContent}
-            onChange={handleChange(setTextAreaContent)}
-            id="msgTextarea"
-            className="mb-3"
-          />
-        </Form.Group> */}
-      <Button
-        type="submit"
-        id="sendConfirmButton"
-        disabled={isLoading}
-        onClick={handleCreate}
-      >
-        Create
-      </Button>
-      <Button
-        type="submit"
-        id="sendConfirmButton"
-        disabled={isLoading}
-        onClick={handleSubmit}
-      >
-        Submit
-      </Button>
-
+        <Button type="submit" id="sendConfirmButton" disabled={isLoading}>
+          Safe Swap
+        </Button>
+      </Form>
+{/* 
       <Result>
         <span id="confirmResult">{JSON.stringify(data, null, 2)}</span>
-      </Result>
+      </Result> */}
     </Snap>
   );
 };
