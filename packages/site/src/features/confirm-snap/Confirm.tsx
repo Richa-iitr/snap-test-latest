@@ -9,6 +9,7 @@ import { Button, Form } from 'react-bootstrap';
 import { Result, Snap } from '../../components';
 import { useInvokeMutation } from '../../api';
 import { getSnapId } from '../../utils/id';
+import React from 'react';
 
 const CONFIRM_SNAP_ID = 'npm:@metamask/test-snap-confirm';
 const CONFIRM_SNAP_PORT = 8001;
@@ -42,47 +43,6 @@ export const Confirm: FunctionComponent = () => {
       testId="SwapSnap"
     >
       <Form onSubmit={handleSubmit} className="mb-3">
-        <Form.Group>
-          <Form.Label>Swap From</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="e.g. WETH"
-            value={title}
-            onChange={handleChange(setTitle)}
-            id="msgTitle"
-            className="mb-2"
-          />
-
-          <Form.Label>Swap To</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="e.g. USDC"
-            value={title}
-            onChange={handleChange(setTitle)}
-            id="msgTitle"
-            className="mb-2"
-          />
-          <Form.Label>Enter Amount</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="e.g. 1.0"
-            value={title}
-            onChange={handleChange(setTitle)}
-            id="msgTitle"
-            className="mb-2"
-          />
-
-          <Form.Label>DEX Order</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="e.g. Uniswap"
-            value={description}
-            onChange={handleChange(setDescription)}
-            id="msgDescription"
-            className="mb-2"
-          />
-        </Form.Group>
-
         <Button type="submit" id="sendConfirmButton" disabled={isLoading}>
           Safe Swap
         </Button>
