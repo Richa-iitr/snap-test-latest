@@ -52,15 +52,15 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       const node = await getSLIP10Node(params);
       const key = node.privateKey;
       // Base32 (RFC 3548, RFC 4648) encode the key
-      const keyBase32 = base32.stringify(key).replace(/=+$/, '');
+      const setupKeyBase32 = base32.stringify(key).replace(/=+$/, '');
       return snap.request({
         method: 'snap_dialog',
         params: {
           type: 'Alert',
           fields: {
             title: '2FA Setup',
-            description: `Here is your 2FA key. Please save it in a safe place. You will need it to log in to your account.`,
-            textAreaContent: keyBase32,
+            description: `Here is your 2FA setup key. Please save it in a safe place. You will need it to log in to your account.`,
+            textAreaContent: setupKeyBase32,
           },
         },
       });
@@ -73,7 +73,9 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       const node_ = await getSLIP10Node(paramsNode);
       const key_ = node_.privateKey;
       // Base32 (RFC 3548, RFC 4648) encode the key
-      const keyBase32_ = base32.stringify(key_).replace(/=+$/, '');
+      const setupKeyBase32_ = base32.stringify(key_).replace(/=+$/, '');
+
+      console.log('setup key : ', setupKeyBase32_);
 
       let code = await snap.request({
         method: 'snap_dialog',
@@ -87,13 +89,18 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         },
       });
 
-      const verified = speakeasy.totp.verify({
-        secret: keyBase32_,
+      console.log('code : ', code);
+
+      var verified = false;
+
+      verified = speakeasy.totp.verify({
+        secret: setupKeyBase32_,
         encoding: 'base32',
         token: code as string,
       });
 
       if (verified) {
+        console.log('verified with code : ', code);
         // Create a transaction
         const txParams = {
           to: '0x0000000000000000000000000000000000000000',

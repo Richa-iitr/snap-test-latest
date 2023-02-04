@@ -14,7 +14,9 @@ import { BIP32 } from '../features/bip-32-snap';
 import { Update } from '../features/update-snap';
 import { Rpc } from '../features/rpc-snap';
 import { Insights } from '../features/insights-snap';
+import { Buffer } from "buffer";
 
+window.Buffer = window.Buffer || Buffer;
 interface Query {
   site: {
     siteMetadata: {
