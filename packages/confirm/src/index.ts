@@ -1,10 +1,16 @@
 import { OnRpcRequestHandler } from '@metamask/snaps-types';
-import { ethers, Wallet } from 'ethers';
+import { ethers } from 'ethers';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import BigNumber from 'bignumber.js';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { factoryAbi, acctAbi, erc20Abi, uniswapQuoterAbi } from './abi';
+import {
+  factoryAbi,
+  acctAbi,
+  erc20Abi,
+  uniswapQuoterAbi,
+  multisigFactoryAbi,
+} from './abi';
 import { erc20tokens, dexs } from './constants';
 
 const getAccount = async () => {
@@ -222,6 +228,167 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           },
         ],
       });
+    }
+
+    case 'initiateTx': {
+      // const provider = await getProvider();
+      // const account = await getAccount();
+      // const owner = provider.getSigner(account);
+
+      const toAddress = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Tx Setup',
+            description: 'Enter the address to make the contract call',
+          },
+        },
+      });
+
+      await snap.request({
+        method: 'snap_confirm',
+        params: [
+          {
+            prompt: 'Account created',
+            description: 'You smart contract account address',
+            textAreaContent: `${toAddress}`,
+          },
+        ],
+      });
+      const inputSignature = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Tx Setup',
+            description: 'Enter the function signature',
+          },
+        },
+      });
+
+      await snap.request({
+        method: 'snap_confirm',
+        params: [
+          {
+            prompt: 'Account created',
+            description: 'You smart contract account address',
+            textAreaContent: `${inputSignature}`,
+          },
+        ],
+      });
+
+      const inputParams = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Tx Setup',
+            description: 'Enter the function params, separated by comma',
+          },
+        },
+      });
+
+      await snap.request({
+        method: 'snap_confirm',
+        params: [
+          {
+            prompt: 'Account created',
+            description: 'You smart contract account address',
+            textAreaContent: `${inputParams}`,
+          },
+        ],
+      });
+      break;
+    }
+
+    case 'createSafe': {
+      const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
+      const provider = await getProvider();
+      const account = await getAccount();
+      const owner = provider.getSigner(account);
+
+      const sigfactory = new ethers.Contract(
+        '0x0Fa4E505896e5DCAA28dF8AdCDe0e4b521E4b4a6',
+        multisigFactoryAbi,
+        owner,
+      );
+
+      const inputOwners = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Safe Setup',
+            description:
+              "Enter the owners of the safe separated by comma. e.g. ['0xaddedf...','0xgdgjenk...']",
+          },
+        },
+      });
+
+      const input = (inputOwners as string).split(',');
+      let auths = [];
+
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < input.length; i++) {
+        auths.push(input[i]);
+      }
+
+      const inputThreshold = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Safe Setup',
+            description:
+              'Enter the threshold of signatures to be signed for execution of transaction',
+          },
+        },
+      });
+
+      const safeImpl_ = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E';
+      const tx = await sigfactory
+        .connect(owner)
+        .createSafe(
+          safeImpl_,
+          auths,
+          inputThreshold,
+          ZERO_ADDR,
+          '0x00',
+          ZERO_ADDR,
+          ZERO_ADDR,
+          '0',
+          ZERO_ADDR,
+        );
+      const rc = await tx.wait();
+      const event_ = rc.events.find((x: any) => x.event === 'SafeCreated');
+      const safe_ = event_.args.clone;
+
+      await snap.request({
+        method: 'snap_manageState',
+        params: {
+          operation: 'update',
+          newState: { safeAccount: [`${safe_.toString()}`] },
+        },
+      });
+
+      const state: any = await snap.request({
+        method: 'snap_manageState',
+        params: { operation: 'get' },
+      });
+      let safe = '';
+
+      if (state) {
+        safe = state.safeAccount[0].toString();
+        await snap.request({
+          method: 'snap_notify',
+          params: {
+            type: 'inApp',
+            message: `${safe}`,
+          },
+        });
+      }
+      break;
     }
     default:
       throw new Error('Method not found.');
