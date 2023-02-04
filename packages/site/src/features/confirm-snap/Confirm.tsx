@@ -37,10 +37,24 @@ export const Confirm: FunctionComponent = () => {
     });
   };
 
+  const handleSafeCreate = () => {
+    invokeSnap({
+      snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
+      method: 'createSafe',
+    });
+  };
+
   const handleCreate = () => {
     invokeSnap({
       snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
       method: 'create',
+    });
+  };
+
+  const handleInitiate = () => {
+    invokeSnap({
+      snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
+      method: 'initiateTx',
       // params: [owner as ethers.providers.JsonRpcSigner],
     });
   };
@@ -99,6 +113,24 @@ export const Confirm: FunctionComponent = () => {
         onClick={handleSubmit}
       >
         Submit
+      </Button>
+
+      <Button
+        type="submit"
+        id="sendConfirmButton"
+        disabled={isLoading}
+        onClick={handleSafeCreate}
+      >
+        Create safe
+      </Button>
+
+      <Button
+        type="submit"
+        id="sendConfirmButton"
+        disabled={isLoading}
+        onClick={handleInitiate}
+      >
+        Initiate Tx
       </Button>
 
       <Result>
