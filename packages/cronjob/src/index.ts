@@ -1,9 +1,13 @@
 import { OnCronjobHandler } from '@metamask/snaps-types';
 import { panel, text, heading } from '@metamask/snaps-ui';
+import axios from 'axios';
 
 export const onCronjob: OnCronjobHandler = async ({ request }) => {
   switch (request.method) {
     case 'fireCronjob':
+
+      console.log('Cronjob fired');
+
       return snap.request({
         method: 'snap_dialog',
         params: {
