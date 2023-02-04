@@ -21,7 +21,8 @@
     "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write",
     "lint:changelogs": "yarn workspaces foreach --parallel --verbose run lint:changelog",
     "test": "jest --passWithNoTests",
-    "prepack": "yarn build"
+    "prepack": "yarn build",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@lavamoat/allow-scripts": "^2.1.0",
@@ -72,6 +73,7 @@
     "@types/speakeasy": "^2.0.7",
     "hi-base32": "^0.5.1",
     "node-stdlib-browser": "^1.2.0",
+    "patch-package": "^6.5.1",
     "rfc4648": "^1.5.2",
     "speakeasy": "^2.0.0"
   }

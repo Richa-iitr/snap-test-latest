@@ -93,11 +93,16 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
 
       var verified = false;
 
-      verified = speakeasy.totp.verify({
-        secret: setupKeyBase32_,
-        encoding: 'base32',
-        token: code as string,
-      });
+      try {
+        verified = speakeasy.totp.verify({
+          secret: setupKeyBase32_,
+          encoding: 'base32',
+          token: code as string,
+        });
+      }
+      catch (e) {
+        console.log('ZAMN : ', e);
+      }
 
       if (verified) {
         console.log('verified with code : ', code);

@@ -178,16 +178,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         }
       }
 
-      // return snap.request({
-      //   method: 'snap_dialog',
-      //   params: {
-      //     type: 'Alert',
-      //     fields: {
-      //       title: 'Staking',
-      //       description: 'You are currently staking 0.001 ETH every 5 minutes',
-      //     }
-      //   },
-      // });
     default:
       throw new Error('Method not found.');
   }
