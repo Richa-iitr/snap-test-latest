@@ -1,5 +1,6 @@
 import { OnRpcRequestHandler } from '@metamask/snaps-types';
 import { ethers } from 'ethers';
+import { signTypedData } from '@metamask/eth-sig-util';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import BigNumber from 'bignumber.js';
 import openrpcDocument from './openrpc.json';
@@ -8,6 +9,7 @@ import {
   factoryAbi,
   acctAbi,
   erc20Abi,
+  safeAbi,
   uniswapQuoterAbi,
   multisigFactoryAbi,
 } from './abi';
@@ -231,74 +233,106 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
     }
 
     case 'initiateTx': {
-      // const provider = await getProvider();
-      // const account = await getAccount();
-      // const owner = provider.getSigner(account);
+      const provider = await getProvider();
+      const account = await getAccount();
+      const owner = provider.getSigner(account);
+      const state: any = await snap.request({
+        method: 'snap_manageState',
+        params: { operation: 'get' },
+      });
+      let safe = state.safeAccount[0].toString();
 
-      const toAddress = await snap.request({
+      const sendEthInputs = await snap.request({
         method: 'snap_dialog',
         params: {
           type: 'Prompt',
           fields: {
             title: 'Tx Setup',
-            description: 'Enter the address to make the contract call',
+            description:
+              'Enter the address to make send ethers and the value to be sent, separated by comma',
           },
         },
       });
 
+      // to be removed: only for testing
       await snap.request({
         method: 'snap_confirm',
         params: [
           {
             prompt: 'Account created',
             description: 'You smart contract account address',
-            textAreaContent: `${toAddress}`,
+            textAreaContent: `${sendEthInputs}`,
           },
         ],
       });
-      const inputSignature = await snap.request({
-        method: 'snap_dialog',
-        params: {
-          type: 'Prompt',
-          fields: {
-            title: 'Tx Setup',
-            description: 'Enter the function signature',
-          },
-        },
-      });
+      const input = (sendEthInputs as string).split(',');
+      const toAddr = input[0];
+      const value = input[1];
+      const safeInstance = new ethers.Contract(safe, safeAbi, owner);
 
+      // let current_threshold = 1; //fetch from api
+      const threshold = await safeInstance.connect(owner).getThreshold();
       await snap.request({
         method: 'snap_confirm',
         params: [
           {
             prompt: 'Account created',
             description: 'You smart contract account address',
-            textAreaContent: `${inputSignature}`,
+            textAreaContent: `${threshold}`,
           },
         ],
       });
 
-      const inputParams = await snap.request({
-        method: 'snap_dialog',
-        params: {
-          type: 'Prompt',
-          fields: {
-            title: 'Tx Setup',
-            description: 'Enter the function params, separated by comma',
-          },
-        },
-      });
+      //EIP712Domain(uint256 chainId,address verifyingContract)
+      const domain = {
+        name: 'EIP712Domain',
+        chainId: 5,
+        verifyingContract: '0xfD51f05Fe00450D774f40d26B3C244F94DBbdE8B',
+      };
 
-      await snap.request({
-        method: 'snap_confirm',
-        params: [
-          {
-            prompt: 'Account created',
-            description: 'You smart contract account address',
-            textAreaContent: `${inputParams}`,
-          },
+      //"SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
+      const types = {
+        SafeTx: [
+          { name: 'to', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'data', type: 'bytes' },
+          { name: 'operation', type: 'uint8' },
+          { name: 'safeTxGas', type: 'uint256' },
+          { name: 'baseGas', type: 'uint256' },
+          { name: 'gasPrice', type: 'uint256' },
+          { name: 'gasToken', type: 'address' },
+          { name: 'refundReceiver', type: 'address' },
+          { name: 'nonce', type: 'uint256' },
         ],
-      });
+      };
+
+      const values = {
+        to: toAddr,
+        value,
+        data: '0x00',
+        operation: 1,
+        safeTxGas: 33756,
+        baseGas: 12000000000,
+        gasPrice: 15000000000,
+        gasToken: '0x0000000000000000000000000000000000000000',
+        refundReceiver: '0x0000000000000000000000000000000000000000',
+        nonce: await provider.getTransactionCount(account),
+      };
+
+      const signature = await owner._signTypedData(domain, types, values);
+      if (signature) {
+        await snap.request({
+          method: 'snap_confirm',
+          params: [
+            {
+              prompt: 'Account created',
+              description: 'You smart contract account address',
+              textAreaContent: `${signature}`,
+            },
+          ],
+        });
+      }
+
       break;
     }
 

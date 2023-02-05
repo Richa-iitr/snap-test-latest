@@ -32,6 +32,7 @@
     "lint:changelog": "yarn auto-changelog validate"
   },
   "dependencies": {
+    "@metamask/eth-sig-util": "^5.0.2",
     "@metamask/snaps-types": "^0.26.2",
     "ethers": "^5.7.2"
   },
