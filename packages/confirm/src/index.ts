@@ -365,13 +365,15 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         method: 'snap_manageState',
         params: { operation: 'get' },
       });
-      let safe = state.safeAccount[0].toString();
 
       let safeAddress: any;
       let safeOwnerAddresses = [];
       let safeThreshold: any;
 
-      if (!safe) {
+      // eslint-disable-next-line no-negated-condition
+      if (state) {
+        safeAddress = state.safeAccount[0].toString();
+      } else {
         const inputOwners = await snap.request({
           method: 'snap_dialog',
           params: {
@@ -428,7 +430,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           },
         });
       }
-
       // Create JSON object to send to backend
       const safeData = {
         safeAddr: safeAddress,
