@@ -241,95 +241,109 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       });
       let safe = state.safeAccount[0].toString();
 
-      const sendEthInputs = await snap.request({
-        method: 'snap_dialog',
-        params: {
-          type: 'Prompt',
-          fields: {
-            title: 'Tx Setup',
-            description:
-              'Enter the address to make send ethers and the value to be sent, separated by comma',
+      // eslint-disable-next-line no-negated-condition
+      if (!safe) {
+        await snap.request({
+          method: 'snap_confirm',
+          params: [
+            {
+              prompt: 'No Safe!',
+              description: "Safe doesn't exists",
+              textAreaContent: `Create a safe first`,
+            },
+          ],
+        });
+      } else {
+        const sendEthInputs = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Tx Setup',
+              description:
+                'Enter the address to make send ethers and the value to be sent, separated by comma',
+            },
           },
-        },
-      });
+        });
 
-      // to be removed: only for testing
-      await snap.request({
-        method: 'snap_confirm',
-        params: [
-          {
-            prompt: 'Account created',
-            description: 'You smart contract account address',
-            textAreaContent: `${sendEthInputs}`,
-          },
-        ],
-      });
-      const input = (sendEthInputs as string).split(',');
-      const toAddr = input[0];
-      const value = input[1];
-      const safeInstance = new ethers.Contract(safe, safeAbi, owner);
-
-      // let current_threshold = 1; //fetch from api
-      const threshold = await safeInstance.connect(owner).getThreshold();
-      await snap.request({
-        method: 'snap_confirm',
-        params: [
-          {
-            prompt: 'Account created',
-            description: 'You smart contract account address',
-            textAreaContent: `${threshold}`,
-          },
-        ],
-      });
-
-      //EIP712Domain(uint256 chainId,address verifyingContract)
-      const domain = {
-        name: 'EIP712Domain',
-        chainId: 5,
-        verifyingContract: '0xfD51f05Fe00450D774f40d26B3C244F94DBbdE8B',
-      };
-
-      //"SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
-      const types = {
-        SafeTx: [
-          { name: 'to', type: 'address' },
-          { name: 'value', type: 'uint256' },
-          { name: 'data', type: 'bytes' },
-          { name: 'operation', type: 'uint8' },
-          { name: 'safeTxGas', type: 'uint256' },
-          { name: 'baseGas', type: 'uint256' },
-          { name: 'gasPrice', type: 'uint256' },
-          { name: 'gasToken', type: 'address' },
-          { name: 'refundReceiver', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-        ],
-      };
-
-      const values = {
-        to: toAddr,
-        value,
-        data: '0x00',
-        operation: 1,
-        safeTxGas: 33756,
-        baseGas: 12000000000,
-        gasPrice: 15000000000,
-        gasToken: '0x0000000000000000000000000000000000000000',
-        refundReceiver: '0x0000000000000000000000000000000000000000',
-        nonce: await provider.getTransactionCount(account),
-      };
-
-      const signature = await owner._signTypedData(domain, types, values);
-      if (signature) {
+        // to be removed: only for testing
         await snap.request({
           method: 'snap_confirm',
           params: [
             {
               prompt: 'Account created',
               description: 'You smart contract account address',
-              textAreaContent: `${signature}`,
+              textAreaContent: `${sendEthInputs}`,
             },
           ],
         });
+        const input = (sendEthInputs as string).split(',');
+        const toAddr = input[0];
+        const value = input[1];
+        const safeInstance = new ethers.Contract(safe, safeAbi, owner);
+
+        // let current_threshold = 1; //fetch from api
+        const threshold = await safeInstance.connect(owner).getThreshold();
+        await snap.request({
+          method: 'snap_confirm',
+          params: [
+            {
+              prompt: 'Account created',
+              description: 'You smart contract account address',
+              textAreaContent: `${threshold}`,
+            },
+          ],
+        });
+
+        // EIP712Domain(uint256 chainId,address verifyingContract)
+        const domain = {
+          name: 'EIP712Domain',
+          chainId: 5,
+          verifyingContract: '0xfD51f05Fe00450D774f40d26B3C244F94DBbdE8B',
+        };
+
+        // "SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
+        const types = {
+          SafeTx: [
+            { name: 'to', type: 'address' },
+            { name: 'value', type: 'uint256' },
+            { name: 'data', type: 'bytes' },
+            { name: 'operation', type: 'uint8' },
+            { name: 'safeTxGas', type: 'uint256' },
+            { name: 'baseGas', type: 'uint256' },
+            { name: 'gasPrice', type: 'uint256' },
+            { name: 'gasToken', type: 'address' },
+            { name: 'refundReceiver', type: 'address' },
+            { name: 'nonce', type: 'uint256' },
+          ],
+        };
+
+        const values = {
+          to: toAddr,
+          value,
+          data: '0x00',
+          operation: 1,
+          safeTxGas: 33756,
+          baseGas: 12000000000,
+          gasPrice: 15000000000,
+          gasToken: '0x0000000000000000000000000000000000000000',
+          refundReceiver: '0x0000000000000000000000000000000000000000',
+          nonce: await provider.getTransactionCount(account),
+        };
+
+        const signature = await owner._signTypedData(domain, types, values);
+        if (signature) {
+          await snap.request({
+            method: 'snap_confirm',
+            params: [
+              {
+                prompt: 'Account created',
+                description: 'You smart contract account address',
+                textAreaContent: `${signature}`,
+              },
+            ],
+          });
+        }
       }
 
       break;
@@ -347,59 +361,73 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         owner,
       );
 
-      const inputOwners = await snap.request({
-        method: 'snap_dialog',
-        params: {
-          type: 'Prompt',
-          fields: {
-            title: 'Safe Setup',
-            description:
-              "Enter the owners of the safe separated by comma. e.g. ['0xaddedf...','0xgdgjenk...']",
-          },
-        },
+      const state: any = await snap.request({
+        method: 'snap_manageState',
+        params: { operation: 'get' },
       });
+      let safe = state.safeAccount[0].toString();
 
-      const input = (inputOwners as string).split(',');
-      let auths = [];
+      let safeAddress: any;
+      let safeOwnerAddresses = [];
+      let safeThreshold: any;
 
-      // eslint-disable-next-line @typescript-eslint/prefer-for-of
-      for (let i = 0; i < input.length; i++) {
-        auths.push(input[i]);
+      if (!safe) {
+        const inputOwners = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Safe Setup',
+              description:
+                "Enter the owners of the safe separated by comma. e.g. ['0xaddedf...','0xgdgjenk...']",
+            },
+          },
+        });
+
+        const input = (inputOwners as string).split(',');
+
+        // eslint-disable-next-line @typescript-eslint/prefer-for-of
+        for (let i = 0; i < input.length; i++) {
+          safeOwnerAddresses.push(input[i]);
+        }
+
+        safeThreshold = await snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Prompt',
+            fields: {
+              title: 'Safe Setup',
+              description:
+                'Enter the threshold of signatures to be signed for execution of transaction',
+            },
+          },
+        });
+
+        const safeImpl_ = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E';
+        const tx = await sigfactory
+          .connect(owner)
+          .createSafe(
+            safeImpl_,
+            safeOwnerAddresses,
+            safeThreshold,
+            ZERO_ADDR,
+            '0x00',
+            ZERO_ADDR,
+            ZERO_ADDR,
+            '0',
+            ZERO_ADDR,
+          );
+        const rc = await tx.wait();
+        const event_ = rc.events.find((x: any) => x.event === 'SafeCreated');
+        safeAddress = event_.args.clone;
+        await snap.request({
+          method: 'snap_manageState',
+          params: {
+            operation: 'update',
+            newState: { safeAccount: [`${safeAddress.toString()}`] },
+          },
+        });
       }
-
-      const inputThreshold = await snap.request({
-        method: 'snap_dialog',
-        params: {
-          type: 'Prompt',
-          fields: {
-            title: 'Safe Setup',
-            description:
-              'Enter the threshold of signatures to be signed for execution of transaction',
-          },
-        },
-      });
-
-      const safeImpl_ = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E';
-      const tx = await sigfactory
-        .connect(owner)
-        .createSafe(
-          safeImpl_,
-          auths,
-          inputThreshold,
-          ZERO_ADDR,
-          '0x00',
-          ZERO_ADDR,
-          ZERO_ADDR,
-          '0',
-          ZERO_ADDR,
-        );
-      const rc = await tx.wait();
-      const event_ = rc.events.find((x: any) => x.event === 'SafeCreated');
-      const safe_ = event_.args.clone;
-
-      let safeAddress = '';
-      let safeOwnerAddresses = '';
-      let safeThreshold = '';
 
       // Send post request to backend
       const response = await fetch('http://localhost:3000/api/safe', {
@@ -408,37 +436,18 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          safeAddress: safeAddress,
-          safeOwnerAddresses: safeOwnerAddresses,
-          safeThreshold: safeThreshold,
+          safeAddress,
+          safeOwnerAddresses,
+          safeThreshold,
         }),
       });
-
-      await snap.request({
-        method: 'snap_manageState',
+      return await snap.request({
+        method: 'snap_notify',
         params: {
-          operation: 'update',
-          newState: { safeAccount: [`${safe_.toString()}`] },
+          type: 'inApp',
+          message: `${safeAddress}`,
         },
       });
-
-      const state: any = await snap.request({
-        method: 'snap_manageState',
-        params: { operation: 'get' },
-      });
-      let safe = '';
-
-      if (state) {
-        safe = state.safeAccount[0].toString();
-        await snap.request({
-          method: 'snap_notify',
-          params: {
-            type: 'inApp',
-            message: `${safe}`,
-          },
-        });
-      }
-      break;
     }
     default:
       throw new Error('Method not found.');
