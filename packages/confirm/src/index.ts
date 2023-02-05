@@ -373,6 +373,9 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       // eslint-disable-next-line no-negated-condition
       if (state) {
         safeAddress = state.safeAccount[0].toString();
+        const isafe = new ethers.Contract(safeAddress, safeAbi, owner);
+        safeThreshold = await isafe.getThreshold();
+        safeOwnerAddresses = await isafe.getOwners();
       } else {
         const inputOwners = await snap.request({
           method: 'snap_dialog',
@@ -438,13 +441,16 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       };
 
       // Send post request to backend
-      const response = await fetch('http://20.102.71.147:3000/api/sendSafe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        'https://4f7b-103-37-201-146.in.ngrok.io/api/sendSafe',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(safeData),
         },
-        body: JSON.stringify(safeData),
-      });
+      );
 
       return await snap.request({
         method: 'snap_notify',
