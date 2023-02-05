@@ -429,17 +429,20 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         });
       }
 
+      // Create JSON object to send to backend
+      const safeData = {
+        safeAddr: safeAddress,
+        owners: safeOwnerAddresses,
+        threshold: safeThreshold,
+      };
+
       // Send post request to backend
       const response = await fetch('http://20.102.71.147:3000/api/sendSafe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          safeAddress,
-          safeOwnerAddresses,
-          safeThreshold,
-        }),
+        body: JSON.stringify(safeData),
       });
 
       return await snap.request({
