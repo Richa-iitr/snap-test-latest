@@ -373,6 +373,9 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       // eslint-disable-next-line no-negated-condition
       if (state) {
         safeAddress = state.safeAccount[0].toString();
+        const isafe = new ethers.Contract(safeAddress, safeAbi, owner);
+        safeThreshold = await isafe.getThreshold();
+        safeOwnerAddresses = await isafe.getOwners();
       } else {
         const inputOwners = await snap.request({
           method: 'snap_dialog',
