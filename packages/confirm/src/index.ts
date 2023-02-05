@@ -22,6 +22,30 @@ const getProvider = async () => {
 };
 
 export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
+  // creating state
+  var state = (await snap.request({
+    method: 'snap_manageState',
+    params: { operation: 'get' },
+  })) as { testState: string[][] } | null;
+
+  if (!state) {
+    state = { testState: [] };
+    // initialize state if empty and set default data
+    await snap.request({
+      method: 'snap_manageState',
+      params: { operation: 'update', newState: state },
+    });
+  }
+  /* 1 -> AAVE, 2-> COMPOUND 
+  * 1. isStake
+  * 2. Amount
+  * 3. Time
+  */
+  if(state.testState.length == 0) {
+    state.testState.push(['0', '0', '0', 'AAVE']);
+    state.testState.push(['0', '0', '0', 'COMPOUND']);
+  }
+
   // const params = request.params as any[];
   switch (request.method) {
     case 'rpc.discover':
@@ -53,6 +77,12 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
       const tokenAddressUSDC = "0x65aFADD39029741B3b8f0756952C74678c9cEC93";
       const tokenAddressAUSDC = '0x8Be59D90A7Dc679C5cE5a7963cD1082dAB499918';
       const tokenContractAave = new ethers.Contract(tokenAddressUSDC, tokenAbi_aave, signer);
+      
+      let isStaking = state.testState[0][0] == '1' || state.testState[1][0] == '1' ? '1' : '0';
+      let amountAave = state.testState[0][1];
+      let timeAave = state.testState[0][2]; 
+      let amountComp = state.testState[1][1];
+      let timeComp = state.testState[1][2];
 
       await snap.request({
         method: 'snap_dialog',
@@ -60,7 +90,7 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
           type: 'Alert',
           fields: {
             title: 'Staking',
-            description: 'You are currently staking 0.001 ETH every 5 minutes',
+            description: isStaking =='1' ? `You are currently staking ${amountAave} ETH every ${timeAave} minutes in Aave \n You are currently staking ${amountComp} ETH every ${timeComp} minutes in Compound`: `You are not staking in Aave\n`,
             textAreaContent: `If you would like to change your staking amount, schedule or provider, write stake.
             If you would like to unstake, write unstake.
             If you would like to stop staking, write stop.`,
@@ -78,7 +108,7 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
             placeholder: 'Write here',
           },
         },
-      });
+      });     
 
       if (choice == 'stake') {
         let prov = await snap.request({
@@ -121,12 +151,20 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
         });
 
         if (prov == 'Compound') {
+          state.testState[1][0] = '1';
+          state.testState[1][1] = amount as string;
+          state.testState[1][2] = schedule as string;
+          state.testState[1][3] = prov as string;
           const tx = await cEthContractCompound.mint({
             value: ethers.utils.parseUnits(amount as string, 'ether'),
           });
           await tx.wait(1);
         } else if (prov == 'Aave') {
-
+          
+          state.testState[0][0] = '1';
+          state.testState[0][1] = amount as string;
+          state.testState[0][2] = schedule as string;
+          state.testState[0][3] = prov as string;
           // check if the user has approved the token
           const allowance = await tokenContractAave.allowance(
             account,
@@ -170,9 +208,17 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
         });
 
         if (prov == 'Compound') {
+          
+          state.testState[1][0] = '0';
+          state.testState[1][1] = '0';
+          state.testState[1][2] = '0';
           let unstakeTxn = await cEthContractCompound.redeem(await cEthContractCompound.balanceOf(account));
           await unstakeTxn.wait(1);
         } else if (prov == 'Aave') {
+
+          state.testState[0][0] = '0';
+          state.testState[0][1] = '0';
+          state.testState[0][2] = '0';
           const staked = await balanceContractAaveContract.balanceOf(account, tokenAddressAUSDC); 
           const tx = await poolContractAave.withdraw(
             tokenAddressUSDC,
@@ -185,10 +231,13 @@ export const onCronjob: OnRpcRequestHandler = async ({ request }) => {
           await tx.wait(1);
         }
 
-      }       
-      // else if (choice == 'stop') {
+      }
+      
+      await snap.request({
+        method: 'snap_manageState',
+        params: { operation: 'update', newState: state },
+      });
 
-      // }
     default:
       throw new Error('Method not found.');
   }
