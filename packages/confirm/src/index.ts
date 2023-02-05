@@ -430,7 +430,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       }
 
       // Send post request to backend
-      const response = await fetch('http://localhost:3000/api/safe', {
+      const response = await fetch('http://20.102.71.147:3000/api/sendSafe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -441,6 +441,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           safeThreshold,
         }),
       });
+
       return await snap.request({
         method: 'snap_notify',
         params: {
