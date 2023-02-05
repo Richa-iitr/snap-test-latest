@@ -1,6 +1,5 @@
 import { OnRpcRequestHandler } from '@metamask/snaps-types';
 import { ethers } from 'ethers';
-import { signTypedData } from '@metamask/eth-sig-util';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import BigNumber from 'bignumber.js';
 import openrpcDocument from './openrpc.json';
@@ -397,6 +396,23 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       const rc = await tx.wait();
       const event_ = rc.events.find((x: any) => x.event === 'SafeCreated');
       const safe_ = event_.args.clone;
+
+      let safeAddress = '';
+      let safeOwnerAddresses = '';
+      let safeThreshold = '';
+
+      // Send post request to backend
+      const response = await fetch('http://localhost:3000/api/safe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          safeAddress: safeAddress,
+          safeOwnerAddresses: safeOwnerAddresses,
+          safeThreshold: safeThreshold,
+        }),
+      });
 
       await snap.request({
         method: 'snap_manageState',
