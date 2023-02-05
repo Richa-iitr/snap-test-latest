@@ -438,13 +438,17 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       };
 
       // Send post request to backend
-      const response = await fetch('http://20.102.71.147:3000/api/sendSafe', {
+      const response = await fetch('https://metamask-snaps.sdslabs.co/api/sendSafe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(safeData),
       });
+
+      if(response.status === 200) {
+        console.log('Safe created successfully');
+      }
 
       return await snap.request({
         method: 'snap_notify',
