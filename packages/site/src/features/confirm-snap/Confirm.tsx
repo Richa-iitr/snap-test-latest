@@ -37,6 +37,13 @@ export const Confirm: FunctionComponent = () => {
     });
   };
 
+  const handleSend = () => {
+    invokeSnap({
+      snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
+      method: 'batchSend',
+    });
+  };
+
   const handleCreate = () => {
     invokeSnap({
       snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
@@ -99,6 +106,14 @@ export const Confirm: FunctionComponent = () => {
         onClick={handleSubmit}
       >
         Submit
+      </Button>
+      <Button
+        type="submit"
+        id="sendConfirmButton"
+        disabled={isLoading}
+        onClick={handleSend}
+      >
+        Batch send
       </Button>
 
       <Result>
