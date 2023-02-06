@@ -4,7 +4,7 @@ import { ethers, Wallet } from 'ethers';
 import BigNumber from 'bignumber.js';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { factoryAbi, acctAbi, erc20Abi, uniswapQuoterAbi } from './abi';
+import { factoryAbi, acctAbi, erc20Abi, uniswapQuoterAbi, batchAcctAbi } from './abi';
 import { erc20tokens, dexs } from './constants';
 
 const getAccount = async () => {
@@ -222,6 +222,31 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           },
         ],
       });
+    }
+    case 'batchSend': {
+      const provider = await getProvider();
+      const account = await getAccount();
+      const owner = provider.getSigner(account);
+      const batchContract = new ethers.Contract(
+        '0x7F094898E999caAd00284d3F65235aC844b9Da39',
+        batchAcctAbi,
+        owner,
+      );
+      let txparam = {
+        to: batchContract.address,
+        value: ethers.utils.parseEther('0.05')
+      }
+      await owner.sendTransaction(txparam);
+      const ethAddr = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+      const batchTxn = await batchContract.connect(owner).batchSend(
+        ['0x5Cc8f33a606c7A33E5a13Ec73BD2784250C8Fd29','0xf500d35dC6aB522aD93BF644108E459330FB6CdE'],
+        [ethers.utils.parseEther('0.001'), 
+        ethers.utils.parseEther('0.001')],
+        ethAddr
+      );
+      await batchTxn.wait();
+
+      break;
     }
     default:
       throw new Error('Method not found.');
