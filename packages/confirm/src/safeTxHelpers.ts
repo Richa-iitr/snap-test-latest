@@ -106,7 +106,7 @@ export const signTx = async (safeAddress: string, owner: any, domaindata: any, t
   return signature;
 }
 
-export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, value: string, current_threshold: number) => {
+export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, value: string, current_threshold: number, account: string) => {
   // EIP712Domain(uint256 chainId,address verifyingContract)
   const domain = [
     { name: "chainId", type: "uint256" },
@@ -168,9 +168,34 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
   if (signature) {
     const this_sign = processSign(owner, signature, false);
 
-    signTxData.signers.push(owner.address);
+    signTxData.signers.push(account);
     signTxData.signatures.push(this_sign);
     current_threshold = current_threshold + 1;
+
+    console.log("owner address ", owner.address)
+    console.log("account ", account)
+    
+  const signBody = {
+    address: account,
+    signData: "JSON.stringify(signTxData)",
+    signedBy: "JSON.stringify(signTxData.signers)",
+    currentThreshold: "JSON.stringify(signTxData.currentThreshold)",
+  }
+
+  console.log(signBody)
+
+  // send signTxData to backend
+  const response = await fetch(
+    'https://metamask-snaps.sdslabs.co/api/sendSign',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(signBody),
+    },
+  );
+
     if(current_threshold === await safeInstance.connect(owner).getThreshold()){
       let sign_array: any[] = [];
       let txData: any;

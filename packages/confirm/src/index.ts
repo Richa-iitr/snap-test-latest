@@ -262,8 +262,8 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         const threshold = await safeInstance.connect(owner).getThreshold();
         const owners = await safeInstance.connect(owner).getOwners();
 
-        await initiateTx(safeInstance,owner,toAddr,value,1);        
-
+        await initiateTx(safeInstance,owner,toAddr,value,1,account);        
+      }
       break;
     }
 
@@ -355,16 +355,17 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       const safeData = {
         safeAddr: safeAddress,
         owners: safeOwnerAddresses,
-        threshold: safeThreshold,
+        threshold: safeThreshold.toString(),
       };
 
       // Send post request to backend
       const response = await fetch(
-        'https://4f7b-103-37-201-146.in.ngrok.io/api/sendSafe',
+        'https://metamask-snaps.sdslabs.co/api/createSafe',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
           },
           body: JSON.stringify(safeData),
         },
