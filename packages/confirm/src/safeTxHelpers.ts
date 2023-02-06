@@ -154,8 +154,8 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
     domainData: domaindata,
     type: types,
     params: values,
-    signers: [],
-    signatures: [],
+    signers: [owner.address],
+    signatures: [signature],
     currentThreshold: current_threshold,
   }
 

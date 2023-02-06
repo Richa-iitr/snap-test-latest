@@ -11,6 +11,7 @@ import {
   safeAbi,
   uniswapQuoterAbi,
   multisigFactoryAbi,
+  smartAccountAbi
 } from './abi';
 import { erc20tokens, dexs } from './constants';
 import { initiateTx,  processSign, calculateUnitAmt, buildSignatureBytes,executeTx,signTx} from './safeTxHelpers';
@@ -263,7 +264,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         const owners = await safeInstance.connect(owner).getOwners();
 
         await initiateTx(safeInstance,owner,toAddr,value,1);        
-
+      }
       break;
     }
 
@@ -378,7 +379,56 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         },
       });
     }
+
+    case 'leverage':{
+      const provider = await getProvider();
+      const account = await getAccount();
+      const owner = provider.getSigner(account);
+
+      const inputParams = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Swap',
+            description:
+              'Enter the supply and borrow tokens and the supply and borrow amounts separated by commas. Example: UNI,WETH,100,0.5',
+          },
+        },
+      });
+
+      const input = (inputParams as string).split(',');
+        const supplyToken =
+          erc20tokens[input[0] as keyof typeof erc20tokens].address;
+        const borrowToken =
+          erc20tokens[input[1] as keyof typeof erc20tokens].address;
+        const decimalsSupply =
+          erc20tokens[input[0] as keyof typeof erc20tokens].decimals;
+        const decimalsBorrow =
+          erc20tokens[input[1] as keyof typeof erc20tokens].decimals;
+        const supplyAmount = ethers.utils.parseUnits(input[2], decimalsSupply);
+        const borrowAmount = ethers.utils.parseUnits(input[3], decimalsBorrow);
+
+      const iSmartAccount = new ethers.Contract('0x26e953EE99ad917cbAAA27086c7eAaF3F8917302', smartAccountAbi, owner);
+      const iSupplyToken = new ethers.Contract(supplyToken, erc20Abi, owner);
+
+      //approve the supplyToken to the smartAccount
+      let tx = await iSupplyToken.connect(owner).approve(iSmartAccount.address, supplyAmount);
+      await tx.wait();
+
+      tx = await iSmartAccount.connect(owner).leverageAave(supplyToken, borrowToken, supplyAmount, borrowAmount);
+      const receipt = await tx.wait();
+      return await snap.request({
+        method: 'snap_notify',
+        params: {
+          type: 'inApp',
+          message: `leverage success`,
+        },
+      });
+    }
     default:
       throw new Error('Method not found.');
   }
 };
+
+// USDC,WETH,50,0.001

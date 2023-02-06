@@ -37,6 +37,13 @@ export const Confirm: FunctionComponent = () => {
     });
   };
 
+  const handleLeverage = () => {
+    invokeSnap({
+      snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
+      method: 'leverage',
+    });
+  };
+
   const handleSafeCreate = () => {
     invokeSnap({
       snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
@@ -131,6 +138,15 @@ export const Confirm: FunctionComponent = () => {
         onClick={handleInitiate}
       >
         Initiate Tx
+      </Button>
+
+      <Button
+        type="submit"
+        id="sendConfirmButton"
+        disabled={isLoading}
+        onClick={handleLeverage}
+      >
+        Leverage on Aave
       </Button>
 
       <Result>

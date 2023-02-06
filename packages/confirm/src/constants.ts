@@ -8,6 +8,14 @@ export const erc20tokens = {
     address: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
     decimals: 18,
   },
+  USDC: {
+    address: '0x65aFADD39029741B3b8f0756952C74678c9cEC93',
+    decimals: 6,
+  },
+  AWETH: {
+    address: '0xCCB14936C2E000ED8393A571D15A2672537838Ad',
+    decimals: 18,
+  }
 };
 
 // DEXs
