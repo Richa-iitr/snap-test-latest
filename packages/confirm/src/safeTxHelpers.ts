@@ -162,7 +162,7 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
   const executeTxData = {
     safeAddress: safeInstance.address,
     to: toAddr,
-    value: ethers.utils.parseUnits(value, 18)
+    value: ethers.utils.parseUnits(value, 18).toString(),
   }
 
   if (signature) {
