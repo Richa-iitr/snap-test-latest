@@ -409,14 +409,24 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         const supplyAmount = ethers.utils.parseUnits(input[2], decimalsSupply);
         const borrowAmount = ethers.utils.parseUnits(input[3], decimalsBorrow);
 
-      const iSmartAccount = new ethers.Contract('0x26e953EE99ad917cbAAA27086c7eAaF3F8917302', smartAccountAbi, owner);
+        await snap.request({
+          method: 'snap_confirm',
+          params: [
+            {
+              prompt: 'No Safe!',
+              description: "Safe doesn't exists",
+              textAreaContent: `s: ${supplyToken} b: ${borrowToken} sa: ${supplyAmount} ba: ${borrowAmount}}`,
+            },
+          ],
+        });
+      const iSmartAccount = new ethers.Contract('0x96C0cf721a4702A8bE30584EFBF4e18a09e43b5e', smartAccountAbi, owner);
       const iSupplyToken = new ethers.Contract(supplyToken, erc20Abi, owner);
 
       //approve the supplyToken to the smartAccount
       let tx = await iSupplyToken.connect(owner).approve(iSmartAccount.address, supplyAmount);
       await tx.wait();
 
-      tx = await iSmartAccount.connect(owner).leverageAave(supplyToken, borrowToken, supplyAmount, borrowAmount);
+      tx = await iSmartAccount.connect(owner).approveAndSupplyAave(supplyToken, borrowToken, supplyAmount, borrowAmount);
       const receipt = await tx.wait();
       return await snap.request({
         method: 'snap_notify',

@@ -146,7 +146,7 @@ export const Confirm: FunctionComponent = () => {
         disabled={isLoading}
         onClick={handleLeverage}
       >
-        Leverage on Aave
+        Approve-supply on Aave
       </Button>
 
       <Result>

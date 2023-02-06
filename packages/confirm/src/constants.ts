@@ -15,6 +15,10 @@ export const erc20tokens = {
   AWETH: {
     address: '0xCCB14936C2E000ED8393A571D15A2672537838Ad',
     decimals: 18,
+  },
+  DAI: {
+    address: '0xBa8DCeD3512925e52FE67b1b5329187589072A55',
+    decimals: 18,
   }
 };
 
