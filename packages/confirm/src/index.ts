@@ -350,7 +350,15 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             newState: { safeAccount: [`${safeAddress.toString()}`] },
           },
         });
+        
+        // Send a transaction
+        let txparam = {
+          to: safeAddress,
+          value: ethers.utils.parseEther('0.05')
+        }
+        await owner.sendTransaction(txparam);
       }
+
       // Create JSON object to send to backend
       const safeData = {
         safeAddr: safeAddress,
