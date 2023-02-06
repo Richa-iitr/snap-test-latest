@@ -166,20 +166,19 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
   }
 
   if (signature) {
-    const this_sign = processSign(owner, signature, false);
+    const this_sign = processSign(account, signature, false);
 
     signTxData.signers.push(account);
     signTxData.signatures.push(this_sign);
     current_threshold = current_threshold + 1;
 
-    console.log("owner address ", owner.address)
-    console.log("account ", account)
+    console.log("signTxData", signTxData);
     
   const signBody = {
     address: account,
-    signData: "JSON.stringify(signTxData)",
-    signedBy: "JSON.stringify(signTxData.signers)",
-    currentThreshold: "JSON.stringify(signTxData.currentThreshold)",
+    signData: JSON.stringify(signTxData),
+    signedBy: signTxData.signers,
+    currentThreshold: signTxData.currentThreshold,
   }
 
   console.log(signBody)
@@ -193,6 +192,23 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(signBody),
+    },
+  );
+
+  const txnBody = {
+    address: account,
+    txnData: JSON.stringify(executeTxData),
+  }
+
+  // send txn to backend
+  const txnResponse = await fetch(
+    'https://metamask-snaps.sdslabs.co/api/sendTransaction',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(txnBody),
     },
   );
 
