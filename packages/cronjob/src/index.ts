@@ -64,13 +64,16 @@ const executeTx = async (safeAddr: any, owner: any, processed_sign_array: any, t
   const final_signs = buildSignatureBytes(processed_sign_array);
   // const nonce = await safeInstance.connect(owner).nonce();
 
+  // Convert txData.value to BigNumber
+  txData.value = ethers.BigNumber.from(txData.value);
+
   console.log('txData.to : ', txData.to)
-  console.log('txData.value : ', txData.value)
+  console.log('txData.value : ', typeof txData.value)
   console.log('final_signs : ', final_signs)
 
   const tx = await safeInstance.connect(owner).execTransaction(
     txData.to.toString(),
-    txData.value.toString(),
+    txData.value,
     "0x",
     0,
     0,
