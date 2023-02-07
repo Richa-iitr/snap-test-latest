@@ -52,6 +52,14 @@ export const Confirm: FunctionComponent = () => {
     });
   };
 
+  const handleANS = () => {
+    invokeSnap({
+      snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
+      method: 'batchAave',
+      // params: [owner as ethers.providers.JsonRpcSigner],
+    });
+  };
+
   return (
     <Snap
       name="Confirm Snap"

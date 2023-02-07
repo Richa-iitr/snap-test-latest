@@ -4,8 +4,14 @@ import { ethers, Wallet } from 'ethers';
 import BigNumber from 'bignumber.js';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { factoryAbi, acctAbi, erc20Abi, uniswapQuoterAbi, batchAcctAbi } from './abi';
-import { erc20tokens, dexs } from './constants';
+import {
+  factoryAbi,
+  acctAbi,
+  erc20Abi,
+  uniswapQuoterAbi,
+  baseAccountAbi,
+} from './abi';
+import { erc20tokens, dexs, deployments } from './constants';
 
 const getAccount = async () => {
   const accounts = await window.ethereum.request({
@@ -19,6 +25,7 @@ const getProvider = async () => {
   return provider;
 };
 
+//off-chain calculation for the amount received per amount in, this is used to check for MEV resistance
 const calculateUnitAmt = (
   amountIn: any,
   decimalsIn: any,
@@ -36,17 +43,13 @@ const calculateUnitAmt = (
 };
 
 export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
-  // const params = request.params as any[];
-  // params[0] = tokenIn address
-  // params[1] = tokenOut address
-  // params[2] = amtIn
-  // params[3] = order of dex -> hardcode maybe
-  // params[4] = unitAmt
-  // params[5] = callData
-  const callData = '0x00'; // not needed for uniswapV2, fetch from API for 1inch,0x, paraswap
+  // not needed for uniswapV2, fetch from API for 1inch,0x, paraswap
+  const callData = '0x00';
   switch (request.method) {
     case 'rpc.discover':
       return openrpcDocument;
+
+    // performs mev resistant swap
     case 'swap': {
       const provider = await getProvider();
       const account = await getAccount();
@@ -56,17 +59,18 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         method: 'snap_manageState',
         params: { operation: 'get' },
       });
-      if (state) {
+
+      if (state && state.account && state.account.length > 0) {
         const sca = state.account[0].toString();
-        const smartAccount = new ethers.Contract(sca, acctAbi, owner);
+        const smartAccount = new ethers.Contract(sca, baseAccountAbi, owner);
         const inputParams = await snap.request({
           method: 'snap_dialog',
           params: {
             type: 'Prompt',
             fields: {
-              title: 'Swap',
+              title: 'Swap Inputs',
               description:
-                'Enter the tokens to be swapped, the amount and the slippage in percentage separated by commas. Example: UNI,WETH,100,0.5',
+                'Enter the tokens and the amount to be swapped and the slippage acceptable in percentage separated by commas. Example: UNI,WETH,100,0.5',
             },
           },
         });
@@ -76,7 +80,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           params: {
             type: 'Prompt',
             fields: {
-              title: 'Swap',
+              title: 'Dex order',
               description:
                 'Enter the order of dex separated by commas. Example: UNISWAPV2,ONEINCH,PARASWAP,ZEROEX',
             },
@@ -130,16 +134,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           decimalsOut,
           slippage,
         );
-        await snap.request({
-          method: 'snap_confirm',
-          params: [
-            {
-              prompt: 'Account created',
-              description: 'You smart contract account address',
-              textAreaContent: `${unitAmt}, ${slippage}, ${expectedAmountOut}, ${amtIn}`,
-            },
-          ],
-        });
 
         const txn = await smartAccount
           .connect(owner)
@@ -149,25 +143,26 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           method: 'snap_notify',
           params: {
             type: 'inApp',
-            message: `swap success`,
+            message: `Swap successful`,
           },
         });
       }
       return 'null';
     }
 
+    // creates a new smart account
     case 'create': {
       const provider = await getProvider();
       const account = await getAccount();
       const owner = provider.getSigner(account);
       const acontract = new ethers.Contract(
-        '0xE42289016E024F3F322896C6728f0434545465C1',
+        deployments.accountFactory,
         factoryAbi,
         owner,
       );
 
-      const swap_ = '0x89012390386aD3337dDd6735B9EAe5e2FAACb21f';
-      const batch_ = '0xaca091817aa8fd7863833fea1bf9f8f500eaf795';
+      const swap_ = deployments.safeSwapModule;
+      const batch_ = deployments.batchTxModule;
 
       const swapSigs = [
         'swap(uint256[],address,address,uint256,uint256,bytes)',
@@ -176,14 +171,14 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         (a) => ethers.utils.id(a).slice(0, 10),
       );
 
-      const aa = await acontract
+      const tx = await acontract
         .connect(owner)
         .createClone(
-          '0x758abf70a15ad8c3de161393c8144534a3851d57',
+          deployments.baseAccount,
           [swap_, batch_],
           [swapSigs, batchSigs],
         );
-      const rc = await aa.wait();
+      const rc = await tx.wait();
       const event_ = rc.events.find((x: any) => x.event === 'cloneCreated');
       const adr = event_.args.clone;
 
@@ -213,41 +208,227 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         });
       }
       return snap.request({
-        method: 'snap_confirm',
-        params: [
-          {
-            prompt: 'Account created',
-            description: 'You smart contract account address',
-            textAreaContent: `Your smart account is deployed to ${acct_}`,
+        method: 'snap_dialog',
+        params: {
+          type: 'Alert',
+          fields: {
+            title: 'SCA Created',
+            description:
+              'Your smart contract is deployed with this EOA as owner',
+            textAreaContent: `Deployed smart contract account at: ${acct_}`,
           },
-        ],
+        },
       });
     }
+
+    // allows user to transfer ethers or erc20 tokens to multiple users in a single transaction
     case 'batchSend': {
       const provider = await getProvider();
       const account = await getAccount();
       const owner = provider.getSigner(account);
-      const batchContract = new ethers.Contract(
-        '0x7F094898E999caAd00284d3F65235aC844b9Da39',
-        batchAcctAbi,
-        owner,
-      );
-      let txparam = {
-        to: batchContract.address,
-        value: ethers.utils.parseEther('0.05')
+
+      const state: any = await snap.request({
+        method: 'snap_manageState',
+        params: { operation: 'get' },
+      });
+
+      if (!state || (state && state.account.length <= 0)) {
+        return snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Alert',
+            fields: {
+              title: '! Invalid action !',
+              description: '!! No smart contract account found !!',
+              textAreaContent:
+                'Create a smart contract account first to perform batch operations.',
+            },
+          },
+        });
       }
+
+      const account_ = state.account[0].toString();
+
+      const inputAddr = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Addresses',
+            description:
+              'Enter the addresses. Example: 0xasd...k98l,0xwen....454y',
+          },
+        },
+      });
+
+      const inputAmts = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Amounts',
+            description:
+              'Enter the amounts to be transferred. Example: 0.01, 10, 5',
+          },
+        },
+      });
+
+      const inputToken = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Token to Transfer',
+            description:
+              'Enter the token to be transferred. Example: ETH, USDC',
+          },
+        },
+      });
+
+      const inputValue = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Transfer ETH',
+            description: 'Enter the value to transfer to sca, 0.5',
+          },
+        },
+      });
+
+      const iaccount = new ethers.Contract(account_, baseAccountAbi, owner);
+
+      // transfer the ethers to smart contract account
+      const txparam = {
+        to: account_,
+        value: ethers.utils.parseEther(inputValue as string),
+      };
       await owner.sendTransaction(txparam);
-      const ethAddr = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
-      const batchTxn = await batchContract.connect(owner).batchSend(
-        ['0x5Cc8f33a606c7A33E5a13Ec73BD2784250C8Fd29','0xf500d35dC6aB522aD93BF644108E459330FB6CdE'],
-        [ethers.utils.parseEther('0.001'), 
-        ethers.utils.parseEther('0.001')],
-        ethAddr
-      );
+
+      const inputAddr_ = (inputAddr as string).split(',');
+      let addresses = [];
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < inputAddr_.length; i++) {
+        addresses.push(inputAddr_[i]);
+      }
+
+      const inputAmts_ = (inputAmts as string).split(',');
+      let amounts: any[] = [];
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < inputAmts_.length; i++) {
+        amounts.push(
+          ethers.utils.parseUnits(
+            inputAmts_[i],
+            erc20tokens[inputToken as keyof typeof erc20tokens].decimals,
+          ),
+        );
+      }
+
+      const token_ = inputToken as string;
+      if (token_ !== 'ETH') {
+        let total = 0;
+        // eslint-disable-next-line @typescript-eslint/prefer-for-of
+        for (let i = 0; i < amounts.length; i++) {
+          total += amounts[i];
+        }
+        const itoken = new ethers.Contract(
+          erc20tokens[token_ as keyof typeof erc20tokens].address,
+          erc20Abi,
+          owner,
+        );
+        const tx = await itoken.connect(owner).approve(account_, total);
+        await tx.wait();
+      }
+      const batchTxn = await iaccount
+        .connect(owner)
+        .batchSend(
+          addresses,
+          amounts,
+          erc20tokens[token_ as keyof typeof erc20tokens].address,
+        );
       await batchTxn.wait();
 
-      break;
+      return snap.request({
+        method: 'snap_notify',
+        params: {
+          type: 'inApp',
+          message: `Batch tx success.`,
+        },
+      });
     }
+
+    case 'batchAave': {
+      const provider = await getProvider();
+      const account = await getAccount();
+      const owner = provider.getSigner(account);
+
+      const state: any = await snap.request({
+        method: 'snap_manageState',
+        params: { operation: 'get' },
+      });
+
+      if (!state || (state && state.account.length <= 0)) {
+        return snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'Alert',
+            fields: {
+              title: '! Unsupported action !',
+              description: '!! No smart contract account found !!',
+              textAreaContent:
+                'Create a smart contract account first to perform batch operations.',
+            },
+          },
+        });
+      }
+
+      const account_ = state.account[0].toString();
+      const iaccount = new ethers.Contract(account_, baseAccountAbi, owner);
+      const inputParams = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'Prompt',
+          fields: {
+            title: 'Aave supply',
+            description:
+              'Enter the supply tokens and amounts. Example: UNI,100',
+          },
+        },
+      });
+
+      const input = (inputParams as string).split(',');
+      const supplyToken =
+        erc20tokens[input[0] as keyof typeof erc20tokens].address;
+      const decimalsSupply =
+        erc20tokens[input[0] as keyof typeof erc20tokens].decimals;
+      const supplyAmount = ethers.utils.parseUnits(input[1], decimalsSupply);
+
+      const iSupplyToken = new ethers.Contract(supplyToken, erc20Abi, owner);
+
+      // approve the supplyToken to the smartAccount
+      let tx = await iSupplyToken
+        .connect(owner)
+        .approve(iaccount.address, supplyAmount);
+      let rc = await tx.wait();
+
+      tx = await iaccount
+        .connect(owner)
+        .approveAndSupplyAave(
+          supplyToken,
+          supplyToken,
+          supplyAmount,
+          supplyAmount,
+        );
+      await tx.wait();
+      return await snap.request({
+        method: 'snap_notify',
+        params: {
+          type: 'inApp',
+          message: `Batch success`,
+        },
+      });
+    }
+
     default:
       throw new Error('Method not found.');
   }

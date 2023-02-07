@@ -1016,4 +1016,247 @@ export const uniswapQuoterAbi = [
   { stateMutability: 'payable', type: 'receive' },
 ];
 
-export const batchAcctAbi = [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"new_","type":"address"},{"indexed":false,"internalType":"bool","name":"enabled","type":"bool"}],"name":"AuthsUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"token","type":"address"}],"name":"BatchSend","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"supplyToken","type":"address"},{"indexed":false,"internalType":"address","name":"borrowToken","type":"address"},{"indexed":false,"internalType":"uint256","name":"supplyAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"borrowAmount","type":"uint256"}],"name":"LeverageDone","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"module_","type":"address"},{"indexed":false,"internalType":"bytes4","name":"sig_","type":"bytes4"}],"name":"ModuleAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"module_","type":"address"},{"indexed":false,"internalType":"bytes4","name":"sig_","type":"bytes4"}],"name":"ModuleUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"new_","type":"address"}],"name":"OwnerUpdated","type":"event"},{"stateMutability":"payable","type":"fallback"},{"inputs":[{"internalType":"address","name":"to_","type":"address"},{"internalType":"bytes","name":"data_","type":"bytes"}],"name":"_delegateCall","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"bytes4[]","name":"sig_","type":"bytes4[]"},{"internalType":"address","name":"module_","type":"address"}],"name":"addModule","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"supplyToken","type":"address"},{"internalType":"address","name":"borrowToken","type":"address"},{"internalType":"uint256","name":"supplyAmount","type":"uint256"},{"internalType":"uint256","name":"borrowAmount","type":"uint256"}],"name":"approveAndSupplyAave","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address[]","name":"to_","type":"address[]"},{"internalType":"uint256[]","name":"amount_","type":"uint256[]"},{"internalType":"address","name":"token_","type":"address"}],"name":"batchSend","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"factory","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes4","name":"sig_","type":"bytes4"}],"name":"getModule","outputs":[{"internalType":"address","name":"module_","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"factory_","type":"address"},{"internalType":"address","name":"owner_","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"auth_","type":"address"}],"name":"removeAuth","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newAuth_","type":"address"}],"name":"setAuth","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner_","type":"address"}],"name":"setOwner","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes4","name":"sig_","type":"bytes4"},{"internalType":"address","name":"module_","type":"address"}],"name":"updateModule","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[]","name":"contracts_","type":"address[]"},{"internalType":"uint256[]","name":"durations_","type":"uint256[]"}],"name":"whitelistContracts","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
+export const baseAccountAbi = [
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'new_',
+        type: 'address',
+      },
+      { indexed: false, internalType: 'bool', name: 'enabled', type: 'bool' },
+    ],
+    name: 'AuthsUpdated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: false, internalType: 'address', name: 'to', type: 'address' },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'amount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'token',
+        type: 'address',
+      },
+    ],
+    name: 'BatchSend',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'supplyToken',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'borrowToken',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'supplyAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'borrowAmount',
+        type: 'uint256',
+      },
+    ],
+    name: 'LeverageDone',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'module_',
+        type: 'address',
+      },
+      { indexed: false, internalType: 'bytes4', name: 'sig_', type: 'bytes4' },
+    ],
+    name: 'ModuleAdded',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'module_',
+        type: 'address',
+      },
+      { indexed: false, internalType: 'bytes4', name: 'sig_', type: 'bytes4' },
+    ],
+    name: 'ModuleUpdated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'new_',
+        type: 'address',
+      },
+    ],
+    name: 'OwnerUpdated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'supplyToken',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'supplyAmount',
+        type: 'uint256',
+      },
+    ],
+    name: 'SupplyDone',
+    type: 'event',
+  },
+  { stateMutability: 'payable', type: 'fallback' },
+  {
+    inputs: [
+      { internalType: 'address', name: 'to_', type: 'address' },
+      { internalType: 'bytes', name: 'data_', type: 'bytes' },
+    ],
+    name: '_delegateCall',
+    outputs: [{ internalType: 'bool', name: 'success', type: 'bool' }],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes4[]', name: 'sig_', type: 'bytes4[]' },
+      { internalType: 'address', name: 'module_', type: 'address' },
+    ],
+    name: 'addModule',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: 'supplyToken', type: 'address' },
+      { internalType: 'address', name: 'borrowToken', type: 'address' },
+      { internalType: 'uint256', name: 'supplyAmount', type: 'uint256' },
+      { internalType: 'uint256', name: 'borrowAmount', type: 'uint256' },
+    ],
+    name: 'approveAndSupplyAave',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address[]', name: 'to_', type: 'address[]' },
+      { internalType: 'uint256[]', name: 'amount_', type: 'uint256[]' },
+      { internalType: 'address', name: 'token_', type: 'address' },
+    ],
+    name: 'batchSend',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'factory',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes4', name: 'sig_', type: 'bytes4' }],
+    name: 'getModule',
+    outputs: [{ internalType: 'address', name: 'module_', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: 'factory_', type: 'address' },
+      { internalType: 'address', name: 'owner_', type: 'address' },
+    ],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'owner',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'auth_', type: 'address' }],
+    name: 'removeAuth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'newAuth_', type: 'address' }],
+    name: 'setAuth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'newOwner_', type: 'address' }],
+    name: 'setOwner',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes4', name: 'sig_', type: 'bytes4' },
+      { internalType: 'address', name: 'module_', type: 'address' },
+    ],
+    name: 'updateModule',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address[]', name: 'contracts_', type: 'address[]' },
+      { internalType: 'uint256[]', name: 'durations_', type: 'uint256[]' },
+    ],
+    name: 'whitelistContracts',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  { stateMutability: 'payable', type: 'receive' },
+];
