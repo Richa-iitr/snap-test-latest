@@ -1,7 +1,5 @@
 import { OnRpcRequestHandler } from '@metamask/snaps-types';
-import { ethers, Wallet } from 'ethers';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import BigNumber from 'bignumber.js';
+import { ethers } from 'ethers';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
@@ -25,7 +23,7 @@ const getProvider = async () => {
   return provider;
 };
 
-//off-chain calculation for the amount received per amount in, this is used to check for MEV resistance
+// off-chain calculation for the amount received per amount in, this is used to check for MEV resistance
 const calculateUnitAmt = (
   amountIn: any,
   decimalsIn: any,
@@ -60,9 +58,10 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         params: { operation: 'get' },
       });
 
+      // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
       if (state && state.account && state.account.length > 0) {
         const sca = state.account[0].toString();
-        const smartAccount = new ethers.Contract(sca, baseAccountAbi, owner);
+        const smartAccount = new ethers.Contract(sca, acctAbi, owner);
         const inputParams = await snap.request({
           method: 'snap_dialog',
           params: {
@@ -70,7 +69,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
             fields: {
               title: 'Swap Inputs',
               description:
-                'Enter the tokens and the amount to be swapped and the slippage acceptable in percentage separated by commas. Example: UNI,WETH,100,0.5',
+                'Enter the tokens and the amount to be swapped separated by commas. Example: UNI,WETH,100',
             },
           },
         });
@@ -113,7 +112,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           owner,
         );
         const amtIn: any = ethers.utils.parseUnits(input[2], decimalsIn);
-        const slippage = new BigNumber(input[3]).toNumber();
         // Check allowance
         const allowance = await tokenInContract.allowance(account, sca);
         if (allowance.lt(amtIn)) {
@@ -132,7 +130,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           decimalsIn,
           expectedAmountOut,
           decimalsOut,
-          slippage,
+          0,
         );
 
         const txn = await smartAccount
