@@ -96,8 +96,7 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
       const signer = provider.getSigner(account);
 
       const getSignBody = {
-        // address : account,
-        address: '0xFF1bf15a66D28fED8F6CB497b584A26800b45caA',
+        address : account,
       }
 
       // get sign from backend
