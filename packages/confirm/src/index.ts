@@ -1,9 +1,7 @@
 import { OnRpcRequestHandler } from '@metamask/snaps-types';
 import { ethers } from 'ethers';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import BigNumber from 'bignumber.js';
 import openrpcDocument from './openrpc.json';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   factoryAbi,
   acctAbi,
@@ -13,7 +11,7 @@ import {
   multisigFactoryAbi,
 } from './abi';
 import { erc20tokens, dexs } from './constants';
-import { initiateTx,  processSign, calculateUnitAmt, buildSignatureBytes,executeTx,signTx} from './safeTxHelpers';
+import { initiateTx, calculateUnitAmt} from './safeTxHelpers';
 
 const getAccount = async () => {
   const accounts = await window.ethereum.request({
@@ -28,14 +26,7 @@ const getProvider = async () => {
 };
 
 export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
-  // const params = request.params as any[];
-  // params[0] = tokenIn address
-  // params[1] = tokenOut address
-  // params[2] = amtIn
-  // params[3] = order of dex -> hardcode maybe
-  // params[4] = unitAmt
-  // params[5] = callData
-  const callData = '0x00'; // not needed for uniswapV2, fetch from API for 1inch,0x, paraswap
+  const callData = '0x00';
   switch (request.method) {
     case 'rpc.discover':
       return openrpcDocument;
@@ -226,7 +217,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       });
       let safe;
 
-      // eslint-disable-next-line no-negated-condition
       if (!state) {
         await snap.request({
           method: 'snap_confirm',
@@ -240,7 +230,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         });
       } else {
         safe = state.safeAccount[0].toString();
-        //can take safe address too from user or do it mvp way
+
         const sendEthInputs = await snap.request({
           method: 'snap_dialog',
           params: {
@@ -257,10 +247,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         const toAddr = input[0];
         const value = input[1];
         const safeInstance = new ethers.Contract(safe, safeAbi, owner);
-
-        // let current_threshold = 1; //fetch from api
-        const threshold = await safeInstance.connect(owner).getThreshold();
-        const owners = await safeInstance.connect(owner).getOwners();
 
         await initiateTx(safeInstance,owner,toAddr,value,1,account);        
       }
@@ -288,7 +274,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       let safeOwnerAddresses = [];
       let safeThreshold: any;
 
-      // eslint-disable-next-line no-negated-condition
       if (state) {
         safeAddress = state.safeAccount[0].toString();
         const isafe = new ethers.Contract(safeAddress, safeAbi, owner);
@@ -309,7 +294,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
 
         const input = (inputOwners as string).split(',');
 
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i = 0; i < input.length; i++) {
           safeOwnerAddresses.push(input[i]);
         }
@@ -343,6 +327,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         const rc = await tx.wait();
         const event_ = rc.events.find((x: any) => x.event === 'SafeCreated');
         safeAddress = event_.args.clone;
+
         await snap.request({
           method: 'snap_manageState',
           params: {
@@ -367,7 +352,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       };
 
       // Send post request to backend
-      const response = await fetch(
+      await fetch(
         'https://metamask-snaps.sdslabs.co/api/createSafe',
         {
           method: 'POST',

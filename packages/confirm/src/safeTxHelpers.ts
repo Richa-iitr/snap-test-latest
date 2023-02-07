@@ -1,10 +1,9 @@
 import { ethers } from 'ethers';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   safeAbi,
 } from './abi';
 
-export const processSign = (signer_: string, data_: string, dynamic_: boolean) => {
+const processSign = (signer_: string, data_: string, dynamic_: boolean) => {
   let safeSign = {
     signer: signer_,
     data: data_,
@@ -29,10 +28,9 @@ export const calculateUnitAmt = (
   return unitAmt;
 };
 
-export const buildSignatureBytes = (signatures: any) => {
-  const SIGNATURE_LENGTH_BYTES = 65;
+const buildSignatureBytes = (signatures: any) => {
+  const signatureLengthBytes = 65;
   signatures.sort((left: any, right: any) => {
-    console.log(left.signer);
     left.signer.toLowerCase().localeCompare(right.signer.toLowerCase());
   });
 
@@ -41,7 +39,7 @@ export const buildSignatureBytes = (signatures: any) => {
   for (const sig of signatures) {
     if (sig.dynamic) {
       const dynamicPartPosition = (
-        signatures.length * SIGNATURE_LENGTH_BYTES +
+        signatures.length * signatureLengthBytes +
         dynamicBytes.length / 2
       )
         .toString(16)
@@ -64,10 +62,9 @@ export const buildSignatureBytes = (signatures: any) => {
   return signatureBytes + dynamicBytes;
 };
 
-export const executeTx = async (safeAddr: any, owner:any,processed_sign_array: any, txData: any ) => {
+const executeTx = async (safeAddr: any, owner:any,processed_sign_array: any, txData: any ) => {
   const safeInstance = new ethers.Contract(safeAddr, safeAbi, owner);
-  const final_signs = buildSignatureBytes(processed_sign_array);
-  const nonce = await safeInstance.connect(owner).nonce();
+  const finalSigns = buildSignatureBytes(processed_sign_array);
 
   const tx =await safeInstance.connect(owner).execTransaction(
     txData.to,
@@ -79,41 +76,19 @@ export const executeTx = async (safeAddr: any, owner:any,processed_sign_array: a
     0,
     "0x0000000000000000000000000000000000000000",
     "0x0000000000000000000000000000000000000000",
-    nonce
+    finalSigns,
+    {}
   )
-  const receipt = await tx.wait();
-  console.log(receipt);
-
+  await tx.wait();
 }
 
-export const signTx = async (safeAddress: string, owner: any, domaindata: any, types: any, values: any, current_threshold: number) => {
-  const safeInstance = new ethers.Contract(safeAddress, safeAbi, owner);
-  
-  const signature = await owner._signTypedData(domaindata, types, values);
-
-  if (signature) {
-    const this_sign = processSign(owner.address, signature, false);
-    current_threshold = current_threshold+1;
-    if(current_threshold === await safeInstance.connect(owner).getThreshold()){
-      let sign_array:any[] = [];
-      let txData:any;
-      await executeTx(safeInstance, owner, sign_array, txData)
-    }
-    // append this sign to the backend 
-  } else {
-    console.log("Failed");
-  }
-  return signature;
-}
-
-export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, value: string, current_threshold: number, account: string) => {
+export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, value: string, currentThreshold: number, account: string) => {
   // EIP712Domain(uint256 chainId,address verifyingContract)
   const domain = [
     { name: "chainId", type: "uint256" },
     { name: "verifyingContract", type: "address" },
   ];
 
-  // "SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
   const types = {
     SafeTx: [
       { name: "to", type: "address" },
@@ -129,7 +104,7 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
     ],
   };
 
-  const domaindata = {
+  const domainData = {
     chainId: await safeInstance.connect(owner).getChainId(),
     verifyingContract: safeInstance.address,
   };
@@ -146,17 +121,18 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
     refundReceiver: "0x0000000000000000000000000000000000000000",
     nonce: await safeInstance.connect(owner).nonce(),
   };
+  
   //sign the data with EIP 712 standard
-  const signature = await owner._signTypedData(domaindata, types, values);
+  const signature = await owner._signTypedData(domainData, types, values);
 
-  const signTxData = {
+  const signTxnData = {
     safeAddress: safeInstance.address,
-    domainData: domaindata,
+    domainData: domainData,
     type: types,
     params: values,
     signers: [],
     signatures: [],
-    currentThreshold: current_threshold,
+    currentThreshold: currentThreshold,
   }
 
   const executeTxData = {
@@ -166,25 +142,21 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
   }
 
   if (signature) {
-    const this_sign = processSign(account, signature, false);
+    const thisSign = processSign(account, signature, false);
 
-    signTxData.signers.push(account);
-    signTxData.signatures.push(this_sign);
-    current_threshold = current_threshold + 1;
-
-    console.log("signTxData", signTxData);
+    signTxnData.signers.push(account);
+    signTxnData.signatures.push(thisSign);
+    currentThreshold = currentThreshold + 1;
     
   const signBody = {
     address: account,
-    signData: JSON.stringify(signTxData),
-    signedBy: signTxData.signers,
-    currentThreshold: signTxData.currentThreshold,
+    signData: JSON.stringify(signTxnData),
+    signedBy: signTxnData.signers,
+    currentThreshold: signTxnData.currentThreshold,
   }
 
-  console.log(signBody)
-
-  // send signTxData to backend
-  const response = await fetch(
+  // send signTxnData to backend
+  await fetch(
     'https://metamask-snaps.sdslabs.co/api/sendSign',
     {
       method: 'POST',
@@ -201,7 +173,7 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
   }
 
   // send txn to backend
-  const txnResponse = await fetch(
+  await fetch(
     'https://metamask-snaps.sdslabs.co/api/sendTransaction',
     {
       method: 'POST',
@@ -212,12 +184,11 @@ export const initiateTx = async (safeInstance: any, owner: any, toAddr: string, 
     },
   );
 
-    if(current_threshold === await safeInstance.connect(owner).getThreshold()){
-      let sign_array: any[] = [];
-      let txData: any;
-      await executeTx(safeInstance, owner, sign_array, txData)
+    if(currentThreshold === await safeInstance.connect(owner).getThreshold()){
+      let signArray: any[] = [];
+      let txnData: any;
+      await executeTx(safeInstance, owner, signArray, txnData)
     }
-    // append this sign to the backend 
   } else {
     console.log("Failed");
   }
