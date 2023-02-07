@@ -94,7 +94,6 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
       const provider = await getProvider();
       const account = await getAccount();
       const signer = provider.getSigner(account);
-      console.log('Cronjob fired');
 
       const getSignBody = {
         // address : account,
@@ -163,21 +162,16 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
         try {
           const transactionResponseJson = await transactionResponse.json();
 
-          // const safeInstance = new ethers.Contract(transactionResponseJson.safeAddress, safeAbi, signer);
-
           const signArray = signResponseJson.signatures;
 
           const txnData = transactionResponseJson;
-
-          // console.log('Safe Instance : ', safeInstance);
-          console.log('Sign Array : ', signArray);
-          console.log('Transaction Data : ', txnData);
 
           const receipt = await executeTx(transactionResponseJson.safeAddress, signer, signArray, txnData);
 
           if (receipt.status === 1) {
             const updateTransactionBody = {
               address: account,
+              status: 'success',
             }
 
             // update transaction in backend
