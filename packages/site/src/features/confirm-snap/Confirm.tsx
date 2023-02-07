@@ -30,7 +30,7 @@ export const Confirm: FunctionComponent = () => {
   //     fn(event.target.value);
   //   };
 
-  const handleSubmit = () => {
+  const handleSwap = () => {
     invokeSnap({
       snapId: getSnapId(CONFIRM_SNAP_ID, CONFIRM_SNAP_PORT),
       method: 'swap',
@@ -96,9 +96,9 @@ export const Confirm: FunctionComponent = () => {
         type="submit"
         id="sendConfirmButton"
         disabled={isLoading}
-        onClick={handleSubmit}
+        onClick={handleSwap}
       >
-        Submit
+        Safe Swap
       </Button>
 
       <Result>

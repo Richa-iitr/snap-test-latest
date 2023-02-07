@@ -5,7 +5,7 @@ import BigNumber from 'bignumber.js';
 import openrpcDocument from './openrpc.json';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { factoryAbi, acctAbi, erc20Abi, uniswapQuoterAbi } from './abi';
-import { erc20tokens, dexs } from './constants';
+import { erc20tokens, dexs, deployments } from './constants';
 
 const getAccount = async () => {
   const accounts = await window.ethereum.request({
@@ -19,6 +19,7 @@ const getProvider = async () => {
   return provider;
 };
 
+//off-chain calculation for the amount received per amount in, this is used to check for MEV resistance
 const calculateUnitAmt = (
   amountIn: any,
   decimalsIn: any,
@@ -36,17 +37,14 @@ const calculateUnitAmt = (
 };
 
 export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
-  // const params = request.params as any[];
-  // params[0] = tokenIn address
-  // params[1] = tokenOut address
-  // params[2] = amtIn
-  // params[3] = order of dex -> hardcode maybe
-  // params[4] = unitAmt
-  // params[5] = callData
-  const callData = '0x00'; // not needed for uniswapV2, fetch from API for 1inch,0x, paraswap
+  // not needed for uniswapV2, fetch from API for 1inch,0x, paraswap.
+  const callData = '0x00';
+
   switch (request.method) {
     case 'rpc.discover':
       return openrpcDocument;
+
+    //performs mev resistant swap
     case 'swap': {
       const provider = await getProvider();
       const account = await getAccount();
@@ -56,7 +54,8 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
         method: 'snap_manageState',
         params: { operation: 'get' },
       });
-      if (state) {
+
+      if (state && state.account && state.account.length > 0) {
         const sca = state.account[0].toString();
         const smartAccount = new ethers.Contract(sca, acctAbi, owner);
         const inputParams = await snap.request({
@@ -64,9 +63,9 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           params: {
             type: 'Prompt',
             fields: {
-              title: 'Swap',
+              title: 'Swap Inputs',
               description:
-                'Enter the tokens to be swapped, the amount and the slippage in percentage separated by commas. Example: UNI,WETH,100,0.5',
+                'Enter the tokens and the amount to be swapped and the slippage acceptable in percentage separated by commas. Example: UNI,WETH,100,0.5',
             },
           },
         });
@@ -76,7 +75,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           params: {
             type: 'Prompt',
             fields: {
-              title: 'Swap',
+              title: 'Dex order',
               description:
                 'Enter the order of dex separated by commas. Example: UNISWAPV2,ONEINCH,PARASWAP,ZEROEX',
             },
@@ -130,16 +129,6 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           decimalsOut,
           slippage,
         );
-        await snap.request({
-          method: 'snap_confirm',
-          params: [
-            {
-              prompt: 'Account created',
-              description: 'You smart contract account address',
-              textAreaContent: `${unitAmt}, ${slippage}, ${expectedAmountOut}, ${amtIn}`,
-            },
-          ],
-        });
 
         const txn = await smartAccount
           .connect(owner)
@@ -149,25 +138,26 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
           method: 'snap_notify',
           params: {
             type: 'inApp',
-            message: `swap success`,
+            message: `Swap successful`,
           },
         });
       }
       return 'null';
     }
 
+    //creates a new smart account
     case 'create': {
       const provider = await getProvider();
       const account = await getAccount();
       const owner = provider.getSigner(account);
       const acontract = new ethers.Contract(
-        '0xE42289016E024F3F322896C6728f0434545465C1',
+        deployments.accountFactory,
         factoryAbi,
         owner,
       );
 
-      const swap_ = '0x89012390386aD3337dDd6735B9EAe5e2FAACb21f';
-      const batch_ = '0xaca091817aa8fd7863833fea1bf9f8f500eaf795';
+      const swap_ = deployments.safeSwapModule;
+      const batch_ = deployments.batchTxModule;
 
       const swapSigs = [
         'swap(uint256[],address,address,uint256,uint256,bytes)',
@@ -179,7 +169,7 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request }) => {
       const aa = await acontract
         .connect(owner)
         .createClone(
-          '0x758abf70a15ad8c3de161393c8144534a3851d57',
+          deployments.baseAccount,
           [swap_, batch_],
           [swapSigs, batchSigs],
         );
