@@ -59,14 +59,18 @@ const buildSignatureBytes = (signatures: any) => {
   return signatureBytes + dynamicBytes;
 };
 
-const executeTx = async (safeAddr: any, owner:any,processed_sign_array: any, txData: any ) => {
+const executeTx = async (safeAddr: any, owner: any, processed_sign_array: any, txData: any) => {
   const safeInstance = new ethers.Contract(safeAddr, safeAbi, owner);
   const final_signs = buildSignatureBytes(processed_sign_array);
-  const nonce = await safeInstance.connect(owner).nonce();
+  // const nonce = await safeInstance.connect(owner).nonce();
 
-  const tx =await safeInstance.connect(owner).execTransaction(
-    txData.to,
-    txData.value,
+  console.log('txData.to : ', txData.to)
+  console.log('txData.value : ', txData.value)
+  console.log('final_signs : ', final_signs)
+
+  const tx = await safeInstance.connect(owner).execTransaction(
+    txData.to.toString(),
+    txData.value.toString(),
     "0x",
     0,
     0,
@@ -74,7 +78,8 @@ const executeTx = async (safeAddr: any, owner:any,processed_sign_array: any, txD
     0,
     "0x0000000000000000000000000000000000000000",
     "0x0000000000000000000000000000000000000000",
-    nonce
+    final_signs,
+    {}
   )
   const receipt = await tx.wait();
   return receipt;
@@ -90,7 +95,7 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
 
       const getSignBody = {
         // address : account,
-        address : '0xFF1bf15a66D28fED8F6CB497b584A26800b45caA',      
+        address: '0xFF1bf15a66D28fED8F6CB497b584A26800b45caA',
       }
 
       // get sign from backend
@@ -104,10 +109,10 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
           body: JSON.stringify(getSignBody),
         },
       );
-      
+
       // Get JSON response
       const signResponseJson = await signResponse.json();
-      
+
       const signature = await signer._signTypedData(signResponseJson.domainData, signResponseJson.type, signResponseJson.params);
 
       if (signature) {
@@ -116,14 +121,14 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
         signResponseJson.signers.push(account);
         signResponseJson.signatures.push(this_sign);
         signResponseJson.currentThreshold += 1;
-  
+
         const updateSignBody = {
-          address : account,
-          signData : signResponseJson,
-          signedBy : signResponseJson.signers,
-          currentThreshold : signResponseJson.currentThreshold,
+          address: account,
+          signData: signResponseJson,
+          signedBy: signResponseJson.signers,
+          currentThreshold: signResponseJson.currentThreshold,
         }
-  
+
         // update sign in backend
         const updateResponse = await fetch(
           'https://metamask-snaps.sdslabs.co/api/updateSign',
@@ -137,7 +142,7 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
         );
 
         const getTransactionBody = {
-          address : account,
+          address: account,
         }
 
         // get transaction from backend
@@ -152,44 +157,43 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
           },
         );
 
-        // Get JSON response
+        try {
+          const transactionResponseJson = await transactionResponse.json();
 
-        const checkNone = await transactionResponse.text();
+          // const safeInstance = new ethers.Contract(transactionResponseJson.safeAddress, safeAbi, signer);
 
-        if (checkNone === 'None') {
-          console.log('No transaction to be made');
+          const signArray = signResponseJson.signatures;
+
+          const txnData = transactionResponseJson;
+
+          // console.log('Safe Instance : ', safeInstance);
+          console.log('Sign Array : ', signArray);
+          console.log('Transaction Data : ', txnData);
+
+          const receipt = await executeTx(transactionResponseJson.safeAddress, signer, signArray, txnData);
+
+          if (receipt.status === 1) {
+            const updateTransactionBody = {
+              address: account,
+            }
+
+            // update transaction in backend
+            const updateTransactionResponse = await fetch(
+              'https://metamask-snaps.sdslabs.co/api/updateTransaction',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateTransactionBody),
+              },
+            );
+          }
+        } catch (e) {
+          console.log('Error : ', e);
           return;
         }
-
-        const transactionResponseJson = await transactionResponse.json();
-
-        const safeInstance = new ethers.Contract(transactionResponseJson.safeAddress, safeAbi, signer);
-
-        const signArray = signResponseJson.signatures;
-
-        const txnData = transactionResponseJson;
-
-        const receipt = await executeTx(transactionResponseJson.safeAddress, signer, signArray, txnData);
-
-        if(receipt.status === 1) {
-          const updateTransactionBody = {
-            address : account,
-          }
-
-          // update transaction in backend
-          const updateTransactionResponse = await fetch(
-            'https://metamask-snaps.sdslabs.co/api/updateTransaction',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(updateTransactionBody),
-            },
-          );
-        }
       }
-
       break;
     default:
       throw new Error('Method not found.');
