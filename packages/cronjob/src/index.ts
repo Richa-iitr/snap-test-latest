@@ -1,5 +1,4 @@
 import { OnCronjobHandler } from '@metamask/snaps-types';
-import { panel, text, heading } from '@metamask/snaps-ui';
 import { ethers } from 'ethers';
 import { safeAbi } from './safeAbi';
 
@@ -25,7 +24,7 @@ const processSign = (signer_: string, data_: string, dynamic_: boolean) => {
 };
 
 const buildSignatureBytes = (signatures: any) => {
-  const SIGNATURE_LENGTH_BYTES = 65;
+  const signatureLengthBytes = 65;
   signatures.sort((left: any, right: any) => {
     console.log(left.signer);
     left.signer.toLowerCase().localeCompare(right.signer.toLowerCase());
@@ -36,7 +35,7 @@ const buildSignatureBytes = (signatures: any) => {
   for (const sig of signatures) {
     if (sig.dynamic) {
       const dynamicPartPosition = (
-        signatures.length * SIGNATURE_LENGTH_BYTES +
+        signatures.length * signatureLengthBytes +
         dynamicBytes.length / 2
       )
         .toString(16)
@@ -67,9 +66,7 @@ const executeTx = async (
 ) => {
   const safeInstance = new ethers.Contract(safeAddr, safeAbi, owner);
   const final_signs = buildSignatureBytes(processed_sign_array);
-  // const nonce = await safeInstance.connect(owner).nonce();
 
-  // Convert txData.value to BigNumber
   txData.value = ethers.BigNumber.from(txData.value);
 
   console.log('txData.to : ', txData.to);
