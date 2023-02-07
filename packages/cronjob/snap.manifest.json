@@ -31,7 +31,6 @@
         }
       ]
     },
-    "snap_notify": {},
     "endowment:network-access": {},
     "endowment:ethereum-provider": {}
   },
